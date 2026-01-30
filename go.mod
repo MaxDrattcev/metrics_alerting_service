@@ -1,5 +1,5 @@
 module github.com/MaxDrattcev/metrics_alerting_service
 
-go 1.25.6
+go 1.22
 
 require gopkg.in/yaml.v3 v3.0.1
