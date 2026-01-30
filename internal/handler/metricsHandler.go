@@ -80,11 +80,26 @@ func (m *metricsHandler) parsePath(w http.ResponseWriter, path string) (mType, m
 	path = strings.TrimPrefix(path, "/update/")
 	parts := strings.Split(path, "/")
 
-	if len(parts) != 3 {
-		http.Error(w, "Invalid path", http.StatusBadRequest)
+	mType = ""
+	mName = ""
+	mValue = ""
+
+	if len(parts) > 0 {
+		mType = parts[0]
+	}
+	if len(parts) > 1 {
+		mName = parts[1]
+	}
+	if len(parts) > 2 {
+		mValue = parts[2]
+	}
+
+	if mType == "" {
+		http.Error(w, "Incorrect metric type", http.StatusBadRequest)
 		return "", "", "", false
 	}
-	return parts[0], parts[1], parts[2], true
+
+	return mType, mName, mValue, true
 }
 
 func (m *metricsHandler) validateParam(w http.ResponseWriter, mType, mName, mValue string) bool {
