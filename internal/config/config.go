@@ -4,14 +4,31 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
+	"time"
 )
 
 type Config struct {
 	Server ServerConfig `yaml:"server"`
+	Client ClientConfig `yaml:"client"`
 }
 
 type ServerConfig struct {
 	Port string `yaml:"port"`
+}
+
+type ClientConfig struct {
+	Address        string `yaml:"address"`
+	PollInterval   int64  `yaml:"pollInterval"`
+	ReportInterval int64  `yaml:"reportInterval"`
+}
+
+func (c *ClientConfig) GetPollInterval() time.Duration {
+	return time.Duration(c.PollInterval) * time.Second
+}
+
+// GetReportInterval возвращает ReportInterval как time.Duration
+func (c *ClientConfig) GetReportInterval() time.Duration {
+	return time.Duration(c.ReportInterval) * time.Second
 }
 
 func Load() (*Config, error) {

@@ -1,3 +1,19 @@
 package main
 
-func main() {}
+import (
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/agent"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"log"
+)
+
+func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	agent := agent.NewAgent(cfg)
+
+	agent.Start()
+
+	select {}
+}
