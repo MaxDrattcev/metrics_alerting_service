@@ -17,7 +17,7 @@ func SetupRouter(metricsHandler handler.MetricsHandler) http.Handler {
 
 	router.Use(middleware.Logger())
 
-	router.POST("/update/:type/:name/:value", middleware.ValidateContentType(), metricsHandler.Update)
+	router.POST("/update/:type/:name/:value", metricsHandler.Update)
 	router.GET("/value/:type/:name", metricsHandler.GetMetric)
 	router.GET("/", metricsHandler.GetAllMetrics)
 
