@@ -2,6 +2,7 @@ package internal
 
 import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -32,6 +33,7 @@ func TestSetupRouter(t *testing.T) {
 	require.NotNil(t, router)
 
 	req := httptest.NewRequest(http.MethodPost, "/update/gauge/test/123.45", nil)
+	req.Header.Set("Content-Type", "text/plain")
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -43,6 +45,15 @@ type mockMetricsHandler struct {
 	called bool
 }
 
-func (m *mockMetricsHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (m *mockMetricsHandler) Update(c *gin.Context) {
 	m.called = true
+	c.String(http.StatusOK, "")
+}
+
+func (m *mockMetricsHandler) GetMetric(c *gin.Context) {
+	c.String(http.StatusOK, "123.45")
+}
+
+func (m *mockMetricsHandler) GetAllMetrics(c *gin.Context) {
+	c.String(http.StatusOK, "metrics")
 }

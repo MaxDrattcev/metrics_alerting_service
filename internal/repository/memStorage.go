@@ -52,3 +52,25 @@ func (m *MemStorage) exists(key string) bool {
 	_, exists := m.metrics[key]
 	return exists
 }
+
+func (m *MemStorage) GetMetric(mType string, mName string) (models.Metrics, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	key := m.key(mName, mType)
+	metric, ok := m.metrics[key]
+	if ok {
+		return metric, nil
+	}
+	return models.Metrics{}, fmt.Errorf("metric not found")
+}
+
+func (m *MemStorage) GetAllMetrics() ([]models.Metrics, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	metrics := make([]models.Metrics, 0, len(m.metrics))
+
+	for _, metric := range m.metrics {
+		metrics = append(metrics, metric)
+	}
+	return metrics, nil
+}

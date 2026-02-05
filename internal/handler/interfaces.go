@@ -1,7 +1,13 @@
 package handler
 
-import "net/http"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 type MetricsHandler interface {
-	Update(http.ResponseWriter, *http.Request)
+	Update(c *gin.Context)
+
+	GetMetric(c *gin.Context)
+
+	GetAllMetrics(c *gin.Context)
 }
