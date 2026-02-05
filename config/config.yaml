@@ -1,7 +1,7 @@
 server:
-  port: "8080"
+  address: "localhost:8080"
 
 client:
-  address: "http://localhost:8080"
+  address: "localhost:8080"
   pollInterval: 2
   reportInterval: 10

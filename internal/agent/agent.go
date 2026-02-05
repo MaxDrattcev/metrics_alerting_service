@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"log"
 	"time"
@@ -30,7 +29,6 @@ func (a *Agent) Start() {
 func (a *Agent) startCollecting() {
 	for {
 		a.collector.Collect()
-		fmt.Println("Собрал метрики")
 		time.Sleep(a.cfg.Client.GetPollInterval())
 	}
 }
@@ -38,7 +36,6 @@ func (a *Agent) startCollecting() {
 func (a *Agent) startReporting() {
 	for {
 		a.sendAllMetrics()
-		fmt.Println("Отправил метрики")
 		time.Sleep(a.cfg.Client.GetReportInterval())
 	}
 }

@@ -13,7 +13,7 @@ import (
 func TestNewApp(t *testing.T) {
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			Port: ":8080",
+			Address: "localhost:8080",
 		},
 	}
 

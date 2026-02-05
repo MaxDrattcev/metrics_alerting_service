@@ -5,6 +5,7 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/handler"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/repository"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
+	"log"
 	"net/http"
 )
 
@@ -29,5 +30,6 @@ func NewApp(cfg *config.Config) *App {
 }
 
 func (a *App) Run() error {
-	return http.ListenAndServe(":"+a.config.Server.Port, a.router)
+	log.Printf("Server starting on %s", a.config.Server.Address)
+	return http.ListenAndServe(a.config.Server.Address, a.router)
 }

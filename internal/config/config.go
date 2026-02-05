@@ -13,7 +13,7 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port string `yaml:"port"`
+	Address string `yaml:"address"`
 }
 
 type ClientConfig struct {
@@ -26,7 +26,6 @@ func (c *ClientConfig) GetPollInterval() time.Duration {
 	return time.Duration(c.PollInterval) * time.Second
 }
 
-// GetReportInterval возвращает ReportInterval как time.Duration
 func (c *ClientConfig) GetReportInterval() time.Duration {
 	return time.Duration(c.ReportInterval) * time.Second
 }

@@ -29,7 +29,7 @@ func NewMetricsSender(cfg *config.Config) *MetricsSender {
 }
 
 func (s *MetricsSender) SendGauge(name string, value float64) error {
-	url := fmt.Sprintf("%s/update/gauge/%s/%v",
+	url := fmt.Sprintf("http://%s/update/gauge/%s/%v",
 		s.cfg.Client.Address, name, value)
 
 	response, err := s.client.R().
@@ -46,7 +46,7 @@ func (s *MetricsSender) SendGauge(name string, value float64) error {
 }
 
 func (s *MetricsSender) SendCounter(name string, value int64) error {
-	url := fmt.Sprintf("%s/update/counter/%s/%d",
+	url := fmt.Sprintf("http://%s/update/counter/%s/%d",
 		s.cfg.Client.Address, name, value)
 
 	response, err := s.client.R().

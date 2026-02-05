@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
@@ -75,14 +76,17 @@ func TestMetricsSender_SendGauge(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(tt.serverFunc))
 			defer server.Close()
 
+			serverURL, err := url.Parse(server.URL)
+			require.NoError(t, err)
+
 			cfg := &config.Config{
 				Client: config.ClientConfig{
-					Address: server.URL,
+					Address: serverURL.Host,
 				},
 			}
 
 			sender := NewMetricsSender(cfg)
-			err := sender.SendGauge(tt.metricName, tt.metricValue)
+			err = sender.SendGauge(tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -159,14 +163,17 @@ func TestMetricsSender_SendCounter(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(tt.serverFunc))
 			defer server.Close()
 
+			serverURL, err := url.Parse(server.URL)
+			require.NoError(t, err)
+
 			cfg := &config.Config{
 				Client: config.ClientConfig{
-					Address: server.URL,
+					Address: serverURL.Host,
 				},
 			}
 
 			sender := NewMetricsSender(cfg)
-			err := sender.SendCounter(tt.metricName, tt.metricValue)
+			err = sender.SendCounter(tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -180,7 +187,7 @@ func TestMetricsSender_SendCounter(t *testing.T) {
 func TestMetricsSender_SendGauge_InvalidURL(t *testing.T) {
 	cfg := &config.Config{
 		Client: config.ClientConfig{
-			Address: "http://invalid-host:9999",
+			Address: "invalid-host:9999",
 		},
 	}
 
@@ -193,7 +200,7 @@ func TestMetricsSender_SendGauge_InvalidURL(t *testing.T) {
 func TestMetricsSender_SendCounter_InvalidURL(t *testing.T) {
 	cfg := &config.Config{
 		Client: config.ClientConfig{
-			Address: "http://invalid-host:9999",
+			Address: "invalid-host:9999",
 		},
 	}
 

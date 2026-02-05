@@ -1,21 +1,30 @@
 package main
 
 import (
+	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"log"
+	"os"
 )
 
 func main() {
 
-	cfg, err := config.Load()
+	address, err := parseServerFlags()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			Address: address,
+		},
 	}
 
 	app := internal.NewApp(cfg)
 
 	if err := app.Run(); err != nil {
-		panic(err)
+		log.Fatalf("Failed to run app: %v", err)
 	}
 }

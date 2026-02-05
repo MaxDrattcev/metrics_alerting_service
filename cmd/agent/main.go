@@ -1,19 +1,30 @@
 package main
 
 import (
+	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/agent"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
-	"log"
+	"os"
 )
 
 func main() {
-	cfg, err := config.Load()
+	flags, err := parseAgentFlags()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
-	agent := agent.NewAgent(cfg)
 
-	agent.Start()
+	cfg := &config.Config{
+		Client: config.ClientConfig{
+			Address:        flags.Address,
+			ReportInterval: flags.ReportInterval,
+			PollInterval:   flags.PollInterval,
+		},
+	}
+
+	agt := agent.NewAgent(cfg)
+
+	agt.Start()
 
 	select {}
 }
