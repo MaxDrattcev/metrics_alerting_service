@@ -25,7 +25,6 @@ func (m *MemStorage) UpdateGauge(metric models.Metrics) error {
 	}
 	key := m.key(metric.ID, metric.MType)
 	m.metrics[key] = metric
-	fmt.Println(*m.metrics[key].Value)
 	return nil
 }
 
@@ -40,7 +39,6 @@ func (m *MemStorage) UpdateCounter(metric models.Metrics) error {
 		}
 	}
 	m.metrics[key] = metric
-	fmt.Println("Counter: ", *metric.Delta)
 	return nil
 }
 

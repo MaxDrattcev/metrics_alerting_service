@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
-	"strings"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/flags"
 )
 
 type AgentFlags struct {
@@ -22,7 +20,7 @@ func parseAgentFlags() (*AgentFlags, error) {
 
 	flag.Parse()
 
-	if err := checkUnknownFlags(); err != nil {
+	if err := flags.CheckUnknownFlags(); err != nil {
 		return nil, err
 	}
 
@@ -31,32 +29,4 @@ func parseAgentFlags() (*AgentFlags, error) {
 		ReportInterval: int64(*reportInterval),
 		PollInterval:   int64(*pollInterval),
 	}, nil
-}
-
-func checkUnknownFlags() error {
-	knownFlags := make(map[string]bool)
-	flag.VisitAll(func(f *flag.Flag) {
-		knownFlags[f.Name] = true
-	})
-
-	for i := 1; i < len(os.Args); i++ {
-		arg := os.Args[i]
-
-		if !strings.HasPrefix(arg, "-") {
-			continue
-		}
-
-		flagName := strings.TrimPrefix(arg, "-")
-		flagName = strings.TrimPrefix(flagName, "-")
-
-		if idx := strings.Index(flagName, "="); idx != -1 {
-			flagName = flagName[:idx]
-		}
-
-		if !knownFlags[flagName] {
-			return fmt.Errorf("unknown flag: -%s", flagName)
-		}
-	}
-
-	return nil
 }
