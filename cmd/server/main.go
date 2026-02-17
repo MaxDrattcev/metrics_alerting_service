@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentVar"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 	"github.com/bytedance/gopkg/util/logger"
 	"log"
 	"os"
@@ -12,7 +12,7 @@ import (
 
 func main() {
 
-	envVar, err := environmentVar.LoadEnvVar()
+	envVar, err := environmentvar.LoadEnvVar()
 	if err != nil {
 		logger.Info(err)
 	}

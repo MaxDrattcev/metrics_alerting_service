@@ -1,4 +1,4 @@
-package environmentVar
+package environmentvar
 
 import (
 	"fmt"

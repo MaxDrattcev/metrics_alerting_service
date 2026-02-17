@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/agent"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentVar"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 	"log"
 	"os"
 )
 
 func main() {
-	envVar, err := environmentVar.LoadEnvVar()
+	envVar, err := environmentvar.LoadEnvVar()
 	if err != nil {
 		log.Printf("Warning: invalid environment variables, using flags/defaults: %v", err)
 	}
