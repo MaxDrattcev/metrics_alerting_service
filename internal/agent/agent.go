@@ -43,12 +43,12 @@ func (a *Agent) startReporting() {
 func (a *Agent) sendAllMetrics() {
 	gauges := a.collector.GetAllGauges()
 	for name, value := range gauges {
-		if err := a.sender.SendGauge(name, value); err != nil {
+		if err := a.sender.sendGaugeJson(name, value); err != nil {
 			log.Printf("Failed to send gauge %s: %v", name, err)
 		}
 	}
 	pollCount := a.collector.GetPollCount()
-	if err := a.sender.SendCounter("PollCount", pollCount); err != nil {
+	if err := a.sender.sendCounterJson("PollCount", pollCount); err != nil {
 		log.Printf("Failed to send counter PollCounter: %v", err)
 	}
 }

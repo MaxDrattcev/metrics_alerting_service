@@ -28,7 +28,7 @@ func TestNewApp(t *testing.T) {
 func TestSetupRouter(t *testing.T) {
 	mockHandler := &mockMetricsHandler{}
 
-	router := SetupRouter(mockHandler)
+	router := SetupRouter(mockHandler, mockHandler)
 
 	require.NotNil(t, router)
 

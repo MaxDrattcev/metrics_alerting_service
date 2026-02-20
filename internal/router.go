@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-func SetupRouter(metricsHandler handler.MetricsHandler) http.Handler {
+func SetupRouter(metricsHandler handler.MetricsHandler, metricsJsonHandler handler.MetricsHandler) http.Handler {
 	router := gin.Default()
 
 	if files, err := filepath.Glob("templates/*"); err == nil && len(files) > 0 {
@@ -20,6 +20,10 @@ func SetupRouter(metricsHandler handler.MetricsHandler) http.Handler {
 	router.POST("/update/:type/:name/:value", metricsHandler.Update)
 	router.GET("/value/:type/:name", metricsHandler.GetMetric)
 	router.GET("/", metricsHandler.GetAllMetrics)
+
+	router.POST("/update", metricsJsonHandler.Update)
+	router.POST("/value", metricsJsonHandler.GetMetric)
+	router.GET("/metrics", metricsJsonHandler.GetAllMetrics)
 
 	return router
 }

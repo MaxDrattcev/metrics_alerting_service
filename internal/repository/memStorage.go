@@ -56,10 +56,10 @@ func (m *MemStorage) GetMetric(mType string, mName string) (models.Metrics, erro
 	defer m.mu.RUnlock()
 	key := m.key(mName, mType)
 	metric, ok := m.metrics[key]
-	if ok {
-		return metric, nil
+	if !ok {
+		return models.Metrics{}, fmt.Errorf("metric not found")
 	}
-	return models.Metrics{}, fmt.Errorf("metric not found")
+	return metric, nil
 }
 
 func (m *MemStorage) GetAllMetrics() ([]models.Metrics, error) {

@@ -19,8 +19,9 @@ func NewApp(cfg *config.Config) *App {
 	metricsRepo := repository.NewMetricsStorage()
 	metricsService := service.NewMetricsService(metricsRepo)
 	metricsHandler := handler.NewMetricsHandler(metricsService)
+	metricsJsonHandler := handler.NewMetricsJsonHandler(metricsService)
 
-	router := SetupRouter(metricsHandler)
+	router := SetupRouter(metricsHandler, metricsJsonHandler)
 
 	return &App{
 		handler: metricsHandler,
