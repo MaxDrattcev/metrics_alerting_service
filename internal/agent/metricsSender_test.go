@@ -212,7 +212,7 @@ func TestMetricsSender_SendCounter_InvalidURL(t *testing.T) {
 	require.Error(t, err, "Should return error for invalid URL")
 }
 
-func TestMetricsSender_sendGaugeJson(t *testing.T) {
+func TestMetricsSender_sendGaugeJSON(t *testing.T) {
 	tests := []struct {
 		name        string
 		metricName  string
@@ -300,7 +300,7 @@ func TestMetricsSender_sendGaugeJson(t *testing.T) {
 			}
 
 			sender := NewMetricsSender(cfg)
-			err = sender.sendGaugeJson(tt.metricName, tt.metricValue)
+			err = sender.sendGaugeJSON(tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -311,7 +311,7 @@ func TestMetricsSender_sendGaugeJson(t *testing.T) {
 	}
 }
 
-func TestMetricsSender_sendCounterJson(t *testing.T) {
+func TestMetricsSender_sendCounterJSON(t *testing.T) {
 	tests := []struct {
 		name        string
 		metricName  string
@@ -412,7 +412,7 @@ func TestMetricsSender_sendCounterJson(t *testing.T) {
 			}
 
 			sender := NewMetricsSender(cfg)
-			err = sender.sendCounterJson(tt.metricName, tt.metricValue)
+			err = sender.sendCounterJSON(tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -423,24 +423,24 @@ func TestMetricsSender_sendCounterJson(t *testing.T) {
 	}
 }
 
-func TestMetricsSender_sendGaugeJson_InvalidURL(t *testing.T) {
+func TestMetricsSender_sendGaugeJSON_InvalidURL(t *testing.T) {
 	cfg := &config.Config{
 		Client: config.ClientConfig{
 			Address: "invalid-host:9999",
 		},
 	}
 	sender := NewMetricsSender(cfg)
-	err := sender.sendGaugeJson("testGauge", 123.45)
+	err := sender.sendGaugeJSON("testGauge", 123.45)
 	require.Error(t, err)
 }
 
-func TestMetricsSender_sendCounterJson_InvalidURL(t *testing.T) {
+func TestMetricsSender_sendCounterJSON_InvalidURL(t *testing.T) {
 	cfg := &config.Config{
 		Client: config.ClientConfig{
 			Address: "invalid-host:9999",
 		},
 	}
 	sender := NewMetricsSender(cfg)
-	err := sender.sendCounterJson("testCounter", 5)
+	err := sender.sendCounterJSON("testCounter", 5)
 	require.Error(t, err)
 }

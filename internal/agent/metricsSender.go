@@ -47,7 +47,7 @@ func (s *MetricsSender) SendGauge(name string, value float64) error {
 	return nil
 }
 
-func (s *MetricsSender) sendGaugeJson(name string, value float64) error {
+func (s *MetricsSender) sendGaugeJSON(name string, value float64) error {
 	var metric = models.Metrics{
 		ID:    name,
 		MType: "gauge",
@@ -85,7 +85,7 @@ func (s *MetricsSender) SendCounter(name string, value int64) error {
 	return nil
 }
 
-func (s *MetricsSender) sendCounterJson(name string, value int64) error {
+func (s *MetricsSender) sendCounterJSON(name string, value int64) error {
 	var metric = models.Metrics{
 		ID:    name,
 		MType: "counter",

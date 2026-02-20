@@ -14,7 +14,7 @@ import (
 	"testing"
 )
 
-func TestMetricsJsonHandler_Update(t *testing.T) {
+func TestMetricsJSONHandler_Update(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
@@ -117,7 +117,7 @@ func TestMetricsJsonHandler_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockSvc := new(MockService)
 			tt.setupMock(mockSvc)
-			h := NewMetricsJsonHandler(mockSvc)
+			h := NewMetricsJSONHandler(mockSvc)
 
 			var bodyBytes []byte
 			switch b := tt.body.(type) {
@@ -141,7 +141,7 @@ func TestMetricsJsonHandler_Update(t *testing.T) {
 	}
 }
 
-func TestMetricsJsonHandler_GetMetric(t *testing.T) {
+func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
@@ -235,7 +235,7 @@ func TestMetricsJsonHandler_GetMetric(t *testing.T) {
 			setupMock: func(m *MockService) {
 				m.On("GetMetric", models.Gauge, "g1").Return("", errors.New("not found"))
 			},
-			wantStatus: http.StatusInternalServerError,
+			wantStatus: http.StatusNotFound,
 		},
 	}
 
@@ -243,7 +243,7 @@ func TestMetricsJsonHandler_GetMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockSvc := new(MockService)
 			tt.setupMock(mockSvc)
-			h := NewMetricsJsonHandler(mockSvc)
+			h := NewMetricsJSONHandler(mockSvc)
 
 			var bodyBytes []byte
 			switch b := tt.body.(type) {
@@ -270,7 +270,7 @@ func TestMetricsJsonHandler_GetMetric(t *testing.T) {
 	}
 }
 
-func TestMetricsJsonHandler_GetAllMetrics(t *testing.T) {
+func TestMetricsJSONHandler_GetAllMetrics(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	tests := []struct {
@@ -309,7 +309,7 @@ func TestMetricsJsonHandler_GetAllMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockSvc := new(MockService)
 			tt.setupMock(mockSvc)
-			h := NewMetricsJsonHandler(mockSvc)
+			h := NewMetricsJSONHandler(mockSvc)
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)

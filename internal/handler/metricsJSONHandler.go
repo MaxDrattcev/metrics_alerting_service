@@ -10,17 +10,17 @@ import (
 	"strconv"
 )
 
-type metricsJsonHandler struct {
+type metricsJSONHandler struct {
 	service service.MetricsService
 }
 
-func NewMetricsJsonHandler(service service.MetricsService) MetricsHandler {
-	return &metricsJsonHandler{
+func NewMetricsJSONHandler(service service.MetricsService) MetricsHandler {
+	return &metricsJSONHandler{
 		service: service,
 	}
 }
 
-func (m *metricsJsonHandler) Update(c *gin.Context) {
+func (m *metricsJSONHandler) Update(c *gin.Context) {
 	if c.Request.Method != http.MethodPost {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
 		return
@@ -59,7 +59,7 @@ func (m *metricsJsonHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
-func (m *metricsJsonHandler) validateRequest(c *gin.Context, metric models.Metrics) bool {
+func (m *metricsJSONHandler) validateRequest(c *gin.Context, metric models.Metrics) bool {
 	if metric.ID == "" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Name cannot be empty"})
 		return false
@@ -83,7 +83,7 @@ func (m *metricsJsonHandler) validateRequest(c *gin.Context, metric models.Metri
 	return true
 }
 
-func (m *metricsJsonHandler) GetMetric(c *gin.Context) {
+func (m *metricsJSONHandler) GetMetric(c *gin.Context) {
 	if c.Request.Method != http.MethodPost {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
 		return
@@ -114,7 +114,7 @@ func (m *metricsJsonHandler) GetMetric(c *gin.Context) {
 
 	value, err := m.service.GetMetric(metric.MType, metric.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	if metric.MType == models.Gauge {
@@ -140,7 +140,7 @@ func (m *metricsJsonHandler) GetMetric(c *gin.Context) {
 
 }
 
-func (m *metricsJsonHandler) GetAllMetrics(c *gin.Context) {
+func (m *metricsJSONHandler) GetAllMetrics(c *gin.Context) {
 	if c.Request.Method != http.MethodGet {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
 		return
