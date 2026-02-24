@@ -1,6 +1,9 @@
 package agent
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
@@ -47,26 +50,13 @@ func (s *MetricsSender) SendGauge(name string, value float64) error {
 	return nil
 }
 
-func (s *MetricsSender) sendGaugeJSON(name string, value float64) error {
-	var metric = models.Metrics{
+func (s *MetricsSender) SendGaugeJSON(name string, value float64) error {
+	metric := models.Metrics{
 		ID:    name,
 		MType: "gauge",
 		Value: &value,
 	}
-	url := fmt.Sprintf("http://%s/update", s.cfg.Client.Address)
-
-	response, err := s.client.R().
-		SetHeader(contentType, jsonType).
-		SetBody(&metric).
-		Post(url)
-
-	if err != nil {
-		return err
-	}
-	if response.StatusCode() != http.StatusOK {
-		return fmt.Errorf("failed to send gaug metrics. status code: %d, error: %s", response.StatusCode(), response.Error())
-	}
-	return nil
+	return s.sendMetricJSONGzip(metric)
 }
 
 func (s *MetricsSender) SendCounter(name string, value int64) error {
@@ -85,24 +75,43 @@ func (s *MetricsSender) SendCounter(name string, value int64) error {
 	return nil
 }
 
-func (s *MetricsSender) sendCounterJSON(name string, value int64) error {
-	var metric = models.Metrics{
+func (s *MetricsSender) SendCounterJSON(name string, value int64) error {
+	metric := models.Metrics{
 		ID:    name,
 		MType: "counter",
 		Delta: &value,
 	}
+	return s.sendMetricJSONGzip(metric)
+}
+
+func (s *MetricsSender) sendMetricJSONGzip(metric models.Metrics) error {
+	payload, err := json.Marshal(&metric)
+	if err != nil {
+		return fmt.Errorf("marshal metric: %w", err)
+	}
+
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	if _, err := gz.Write(payload); err != nil {
+		_ = gz.Close()
+		return fmt.Errorf("gzip write: %w", err)
+	}
+	if err := gz.Close(); err != nil {
+		return fmt.Errorf("gzip close: %w", err)
+	}
+
 	url := fmt.Sprintf("http://%s/update", s.cfg.Client.Address)
-
-	response, err := s.client.R().
+	resp, err := s.client.R().
 		SetHeader(contentType, jsonType).
-		SetBody(&metric).
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Accept-Encoding", "gzip").
+		SetBody(buf.Bytes()).
 		Post(url)
-
 	if err != nil {
 		return err
 	}
-	if response.StatusCode() != http.StatusOK {
-		return fmt.Errorf("failed to send counter metrics. status code: %d, error: %s", response.StatusCode(), response.Error())
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
 	}
 	return nil
 }

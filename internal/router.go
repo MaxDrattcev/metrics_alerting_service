@@ -15,7 +15,7 @@ func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handl
 		router.LoadHTMLGlob("templates/*")
 	}
 
-	router.Use(middleware.Logger())
+	router.Use(middleware.Logger(), middleware.Compress())
 
 	router.POST("/update/:type/:name/:value", metricsHandler.Update)
 	router.GET("/value/:type/:name", metricsHandler.GetMetric)
