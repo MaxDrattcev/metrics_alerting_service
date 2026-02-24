@@ -1,11 +1,13 @@
 package agent
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -227,9 +229,12 @@ func TestMetricsSender_sendGaugeJSON(t *testing.T) {
 			serverFunc: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, http.MethodPost, r.Method)
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+				assert.Equal(t, "gzip", r.Header.Get("Content-Encoding"))
 				assert.Equal(t, "/update", r.URL.Path)
+				bodyReader, err := decodeGzipBody(r)
+				require.NoError(t, err)
 				var m models.Metrics
-				err := json.NewDecoder(r.Body).Decode(&m)
+				err = json.NewDecoder(bodyReader).Decode(&m)
 				require.NoError(t, err)
 				assert.Equal(t, "testGauge", m.ID)
 				assert.Equal(t, models.Gauge, m.MType)
@@ -262,8 +267,10 @@ func TestMetricsSender_sendGaugeJSON(t *testing.T) {
 			metricName:  "testGauge",
 			metricValue: 0.0,
 			serverFunc: func(w http.ResponseWriter, r *http.Request) {
+				bodyReader, err := decodeGzipBody(r)
+				require.NoError(t, err)
 				var m models.Metrics
-				require.NoError(t, json.NewDecoder(r.Body).Decode(&m))
+				require.NoError(t, json.NewDecoder(bodyReader).Decode(&m))
 				require.NotNil(t, m.Value)
 				assert.Equal(t, 0.0, *m.Value)
 				w.WriteHeader(http.StatusOK)
@@ -275,8 +282,10 @@ func TestMetricsSender_sendGaugeJSON(t *testing.T) {
 			metricName:  "testGauge",
 			metricValue: -100.5,
 			serverFunc: func(w http.ResponseWriter, r *http.Request) {
+				bodyReader, err := decodeGzipBody(r)
+				require.NoError(t, err)
 				var m models.Metrics
-				require.NoError(t, json.NewDecoder(r.Body).Decode(&m))
+				require.NoError(t, json.NewDecoder(bodyReader).Decode(&m))
 				require.NotNil(t, m.Value)
 				assert.Equal(t, -100.5, *m.Value)
 				w.WriteHeader(http.StatusOK)
@@ -300,7 +309,7 @@ func TestMetricsSender_sendGaugeJSON(t *testing.T) {
 			}
 
 			sender := NewMetricsSender(cfg)
-			err = sender.sendGaugeJSON(tt.metricName, tt.metricValue)
+			err = sender.SendGaugeJSON(tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -309,6 +318,17 @@ func TestMetricsSender_sendGaugeJSON(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMetricsSender_sendGaugeJSON_InvalidURL(t *testing.T) {
+	cfg := &config.Config{
+		Client: config.ClientConfig{
+			Address: "invalid-host:9999",
+		},
+	}
+	sender := NewMetricsSender(cfg)
+	err := sender.SendGaugeJSON("testGauge", 123.45)
+	require.Error(t, err)
 }
 
 func TestMetricsSender_sendCounterJSON(t *testing.T) {
@@ -326,9 +346,12 @@ func TestMetricsSender_sendCounterJSON(t *testing.T) {
 			serverFunc: func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, http.MethodPost, r.Method)
 				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+				assert.Equal(t, "gzip", r.Header.Get("Content-Encoding"))
 				assert.Equal(t, "/update", r.URL.Path)
+				bodyReader, err := decodeGzipBody(r)
+				require.NoError(t, err)
 				var m models.Metrics
-				err := json.NewDecoder(r.Body).Decode(&m)
+				err = json.NewDecoder(bodyReader).Decode(&m)
 				require.NoError(t, err)
 				assert.Equal(t, "testCounter", m.ID)
 				assert.Equal(t, models.Counter, m.MType)
@@ -361,8 +384,10 @@ func TestMetricsSender_sendCounterJSON(t *testing.T) {
 			metricName:  "testCounter",
 			metricValue: 0,
 			serverFunc: func(w http.ResponseWriter, r *http.Request) {
+				bodyReader, err := decodeGzipBody(r)
+				require.NoError(t, err)
 				var m models.Metrics
-				require.NoError(t, json.NewDecoder(r.Body).Decode(&m))
+				require.NoError(t, json.NewDecoder(bodyReader).Decode(&m))
 				require.NotNil(t, m.Delta)
 				assert.Equal(t, int64(0), *m.Delta)
 				w.WriteHeader(http.StatusOK)
@@ -374,8 +399,10 @@ func TestMetricsSender_sendCounterJSON(t *testing.T) {
 			metricName:  "testCounter",
 			metricValue: -10,
 			serverFunc: func(w http.ResponseWriter, r *http.Request) {
+				bodyReader, err := decodeGzipBody(r)
+				require.NoError(t, err)
 				var m models.Metrics
-				require.NoError(t, json.NewDecoder(r.Body).Decode(&m))
+				require.NoError(t, json.NewDecoder(bodyReader).Decode(&m))
 				require.NotNil(t, m.Delta)
 				assert.Equal(t, int64(-10), *m.Delta)
 				w.WriteHeader(http.StatusOK)
@@ -387,8 +414,10 @@ func TestMetricsSender_sendCounterJSON(t *testing.T) {
 			metricName:  "testCounter",
 			metricValue: 1000000,
 			serverFunc: func(w http.ResponseWriter, r *http.Request) {
+				bodyReader, err := decodeGzipBody(r)
+				require.NoError(t, err)
 				var m models.Metrics
-				require.NoError(t, json.NewDecoder(r.Body).Decode(&m))
+				require.NoError(t, json.NewDecoder(bodyReader).Decode(&m))
 				require.NotNil(t, m.Delta)
 				assert.Equal(t, int64(1000000), *m.Delta)
 				w.WriteHeader(http.StatusOK)
@@ -412,7 +441,7 @@ func TestMetricsSender_sendCounterJSON(t *testing.T) {
 			}
 
 			sender := NewMetricsSender(cfg)
-			err = sender.sendCounterJSON(tt.metricName, tt.metricValue)
+			err = sender.SendCounterJSON(tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -422,16 +451,16 @@ func TestMetricsSender_sendCounterJSON(t *testing.T) {
 		})
 	}
 }
-
-func TestMetricsSender_sendGaugeJSON_InvalidURL(t *testing.T) {
-	cfg := &config.Config{
-		Client: config.ClientConfig{
-			Address: "invalid-host:9999",
-		},
+func decodeGzipBody(r *http.Request) (io.Reader, error) {
+	if r.Header.Get("Content-Encoding") != "gzip" {
+		return r.Body, nil
 	}
-	sender := NewMetricsSender(cfg)
-	err := sender.sendGaugeJSON("testGauge", 123.45)
-	require.Error(t, err)
+	gz, err := gzip.NewReader(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer gz.Close()
+	return gz, nil
 }
 
 func TestMetricsSender_sendCounterJSON_InvalidURL(t *testing.T) {
@@ -441,6 +470,6 @@ func TestMetricsSender_sendCounterJSON_InvalidURL(t *testing.T) {
 		},
 	}
 	sender := NewMetricsSender(cfg)
-	err := sender.sendCounterJSON("testCounter", 5)
+	err := sender.SendCounterJSON("testCounter", 5)
 	require.Error(t, err)
 }
