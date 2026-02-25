@@ -11,9 +11,14 @@ import (
 )
 
 func TestNewApp(t *testing.T) {
+	storeInterval := int64(300)
+	restore := false
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			Address: "localhost:8080",
+			Address:         "localhost:8080",
+			FileStoragePath: "metrics.json",
+			StoreInterval:   &storeInterval,
+			Restore:         &restore,
 		},
 	}
 

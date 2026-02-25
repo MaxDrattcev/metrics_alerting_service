@@ -10,4 +10,8 @@ type MetricsService interface {
 	GetMetric(string, string) (string, error)
 
 	GetAllMetrics() ([]models.Metrics, error)
+
+	WriteMetricsFile() error
+
+	LoadMeticsFromFile() error
 }

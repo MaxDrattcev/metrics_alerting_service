@@ -1,5 +1,8 @@
 server:
   address: "localhost:8080"
+  storeInterval: 15
+  fileStoragePath: "/pkg/metrics.txt"
+  restore: true
 
 client:
   address: "localhost:8080"

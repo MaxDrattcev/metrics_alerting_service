@@ -17,16 +17,28 @@ func main() {
 		logger.Info(err)
 	}
 
-	address, err := parseServerFlags()
+	flags, err := parseServerFlags()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 	var server = config.ServerConfig{
-		Address: envVar.Address,
+		Address:         envVar.Address,
+		StoreInterval:   envVar.StoreInterval,
+		FileStoragePath: envVar.FileStoragePath,
+		Restore:         envVar.Restore,
 	}
 	if server.Address == "" {
-		server.Address = address
+		server.Address = flags.Address
+	}
+	if server.StoreInterval == nil {
+		server.StoreInterval = &flags.StoreInterval
+	}
+	if server.FileStoragePath == "" {
+		server.FileStoragePath = flags.FileStoragePath
+	}
+	if server.Restore == nil {
+		server.Restore = &flags.Restore
 	}
 
 	cfg := &config.Config{Server: server}

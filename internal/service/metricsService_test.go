@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -39,12 +40,38 @@ func (m *MockStorage) GetAllMetrics() ([]models.Metrics, error) {
 	return args.Get(0).([]models.Metrics), args.Error(1)
 }
 
+type MockFileStorage struct {
+	mock.Mock
+}
+
+func (m *MockFileStorage) WriteMetrics(metrics []models.Metrics) error {
+	args := m.Called(metrics)
+	return args.Error(0)
+}
+
+func (m *MockFileStorage) ReadMetrics() ([]models.Metrics, error) {
+	args := m.Called()
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]models.Metrics), args.Error(1)
+}
+
 func floatPtr(v float64) *float64 {
 	return &v
 }
 
 func int64Ptr(v int64) *int64 {
 	return &v
+}
+
+func testServerConfig(storeInterval int64, restore bool) *config.Config {
+	return &config.Config{
+		Server: config.ServerConfig{
+			StoreInterval: &storeInterval,
+			Restore:       &restore,
+		},
+	}
 }
 
 func TestMetricsService_UpdateGauge(t *testing.T) {
@@ -108,9 +135,11 @@ func TestMetricsService_UpdateGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockStorage)
+			mockFile := new(MockFileStorage)
+			cfg := testServerConfig(300, false)
 			tt.setupMock(mockRepo)
 
-			service := NewMetricsService(mockRepo)
+			service := NewMetricsService(mockRepo, mockFile, cfg)
 			err := service.UpdateGauge(tt.mType, tt.mName, tt.mValue)
 
 			if tt.wantErr {
@@ -194,9 +223,11 @@ func TestMetricsService_UpdateCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockStorage)
+			mockFile := new(MockFileStorage)
+			cfg := testServerConfig(300, false)
 			tt.setupMock(mockRepo)
 
-			service := NewMetricsService(mockRepo)
+			service := NewMetricsService(mockRepo, mockFile, cfg)
 			err := service.UpdateCounter(tt.mType, tt.mName, tt.mValue)
 
 			if tt.wantErr {
@@ -212,6 +243,8 @@ func TestMetricsService_UpdateCounter(t *testing.T) {
 
 func TestMetricsService_UpdateGauge_MetricStructure(t *testing.T) {
 	mockRepo := new(MockStorage)
+	mockFile := new(MockFileStorage)
+	cfg := testServerConfig(300, false)
 
 	mockRepo.On("UpdateGauge", mock.MatchedBy(func(metric models.Metrics) bool {
 		return metric.ID == "testGauge" &&
@@ -221,7 +254,7 @@ func TestMetricsService_UpdateGauge_MetricStructure(t *testing.T) {
 			metric.Hash == ""
 	})).Return(nil)
 
-	service := NewMetricsService(mockRepo)
+	service := NewMetricsService(mockRepo, mockFile, cfg)
 	err := service.UpdateGauge(models.Gauge, "testGauge", floatPtr(123.45))
 
 	require.NoError(t, err)
@@ -230,6 +263,8 @@ func TestMetricsService_UpdateGauge_MetricStructure(t *testing.T) {
 
 func TestMetricsService_UpdateCounter_MetricStructure(t *testing.T) {
 	mockRepo := new(MockStorage)
+	mockFile := new(MockFileStorage)
+	cfg := testServerConfig(300, false)
 
 	mockRepo.On("UpdateCounter", mock.MatchedBy(func(metric models.Metrics) bool {
 		return metric.ID == "testCounter" &&
@@ -239,7 +274,7 @@ func TestMetricsService_UpdateCounter_MetricStructure(t *testing.T) {
 			metric.Hash == ""
 	})).Return(nil)
 
-	service := NewMetricsService(mockRepo)
+	service := NewMetricsService(mockRepo, mockFile, cfg)
 	err := service.UpdateCounter(models.Counter, "testCounter", int64Ptr(5))
 
 	require.NoError(t, err)
@@ -430,9 +465,11 @@ func TestMetricsService_GetMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockStorage)
+			mockFile := new(MockFileStorage)
+			cfg := testServerConfig(300, false)
 			tt.setupMock(mockRepo)
 
-			service := NewMetricsService(mockRepo)
+			service := NewMetricsService(mockRepo, mockFile, cfg)
 			value, err := service.GetMetric(tt.mType, tt.mName)
 
 			if tt.wantErr {
@@ -574,9 +611,11 @@ func TestMetricsService_GetAllMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(MockStorage)
+			mockFile := new(MockFileStorage)
+			cfg := testServerConfig(300, false)
 			tt.setupMock(mockRepo)
 
-			service := NewMetricsService(mockRepo)
+			service := NewMetricsService(mockRepo, mockFile, cfg)
 			metrics, err := service.GetAllMetrics()
 
 			if tt.wantErr {
@@ -594,4 +633,127 @@ func TestMetricsService_GetAllMetrics(t *testing.T) {
 			mockRepo.AssertExpectations(t)
 		})
 	}
+}
+
+func TestMetricsService_WriteMetricsFile(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		mockRepo := new(MockStorage)
+		mockFile := new(MockFileStorage)
+		cfg := testServerConfig(300, false)
+
+		metrics := []models.Metrics{
+			{ID: "g1", MType: models.Gauge, Value: floatPtr(1.0)},
+		}
+		mockRepo.On("GetAllMetrics").Return(metrics, nil)
+		mockFile.On("WriteMetrics", metrics).Return(nil)
+
+		service := NewMetricsService(mockRepo, mockFile, cfg)
+		err := service.WriteMetricsFile()
+
+		require.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+		mockFile.AssertExpectations(t)
+	})
+
+	t.Run("repo error", func(t *testing.T) {
+		mockRepo := new(MockStorage)
+		mockFile := new(MockFileStorage)
+		cfg := testServerConfig(300, false)
+
+		mockRepo.On("GetAllMetrics").Return(nil, errors.New("repo error"))
+
+		service := NewMetricsService(mockRepo, mockFile, cfg)
+		err := service.WriteMetricsFile()
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "repo error")
+		mockRepo.AssertExpectations(t)
+		mockFile.AssertNotCalled(t, "WriteMetrics", mock.Anything)
+	})
+
+	t.Run("file write error", func(t *testing.T) {
+		mockRepo := new(MockStorage)
+		mockFile := new(MockFileStorage)
+		cfg := testServerConfig(300, false)
+
+		mockRepo.On("GetAllMetrics").Return([]models.Metrics{}, nil)
+		mockFile.On("WriteMetrics", mock.Anything).Return(errors.New("write error"))
+
+		service := NewMetricsService(mockRepo, mockFile, cfg)
+		err := service.WriteMetricsFile()
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "write error")
+		mockRepo.AssertExpectations(t)
+		mockFile.AssertExpectations(t)
+	})
+}
+
+func TestMetricsService_LoadMeticsFromFile(t *testing.T) {
+	t.Run("restore false returns nil without reading file", func(t *testing.T) {
+		mockRepo := new(MockStorage)
+		mockFile := new(MockFileStorage)
+		cfg := testServerConfig(300, false)
+
+		service := NewMetricsService(mockRepo, mockFile, cfg)
+		err := service.LoadMeticsFromFile()
+
+		require.NoError(t, err)
+		mockFile.AssertNotCalled(t, "ReadMetrics")
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("restore true success", func(t *testing.T) {
+		mockRepo := new(MockStorage)
+		mockFile := new(MockFileStorage)
+		cfg := testServerConfig(300, true)
+
+		metrics := []models.Metrics{
+			{ID: "g1", MType: models.Gauge, Value: floatPtr(1.0)},
+			{ID: "c1", MType: models.Counter, Delta: int64Ptr(10)},
+		}
+		mockFile.On("ReadMetrics").Return(metrics, nil)
+		mockRepo.On("UpdateGauge", mock.MatchedBy(func(m models.Metrics) bool { return m.ID == "g1" })).Return(nil)
+		mockRepo.On("UpdateCounter", mock.MatchedBy(func(m models.Metrics) bool { return m.ID == "c1" })).Return(nil)
+
+		service := NewMetricsService(mockRepo, mockFile, cfg)
+		err := service.LoadMeticsFromFile()
+
+		require.NoError(t, err)
+		mockFile.AssertExpectations(t)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("restore true file read error", func(t *testing.T) {
+		mockRepo := new(MockStorage)
+		mockFile := new(MockFileStorage)
+		cfg := testServerConfig(300, true)
+
+		mockFile.On("ReadMetrics").Return(nil, errors.New("read error"))
+
+		service := NewMetricsService(mockRepo, mockFile, cfg)
+		err := service.LoadMeticsFromFile()
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "read error")
+		mockFile.AssertExpectations(t)
+		mockRepo.AssertNotCalled(t, "UpdateGauge", mock.Anything)
+		mockRepo.AssertNotCalled(t, "UpdateCounter", mock.Anything)
+	})
+
+	t.Run("restore true empty file", func(t *testing.T) {
+		mockRepo := new(MockStorage)
+		mockFile := new(MockFileStorage)
+		cfg := testServerConfig(300, true)
+
+		mockFile.On("ReadMetrics").Return([]models.Metrics{}, nil)
+
+		service := NewMetricsService(mockRepo, mockFile, cfg)
+		err := service.LoadMeticsFromFile()
+
+		require.NoError(t, err)
+		mockFile.AssertExpectations(t)
+		mockRepo.AssertNotCalled(t, "UpdateGauge", mock.Anything)
+		mockRepo.AssertNotCalled(t, "UpdateCounter", mock.Anything)
+	})
 }

@@ -6,9 +6,12 @@ import (
 )
 
 type EnvVar struct {
-	Address        string `env:"ADDRESS"`
-	ReportInterval int64  `env:"REPORT_INTERVAL"`
-	PollInterval   int64  `env:"POLL_INTERVAL"`
+	Address         string `env:"ADDRESS"`
+	ReportInterval  int64  `env:"REPORT_INTERVAL"`
+	PollInterval    int64  `env:"POLL_INTERVAL"`
+	StoreInterval   *int64 `env:"STORE_INTERVAL"`
+	FileStoragePath string `env:"FILE_STORAGE_PATH"`
+	Restore         *bool  `env:"RESTORE"`
 }
 
 func LoadEnvVar() (EnvVar, error) {
