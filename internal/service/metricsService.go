@@ -106,7 +106,7 @@ func (m *metricsService) WriteMetricsFile() error {
 }
 
 func (m *metricsService) LoadMeticsFromFile() error {
-	if *m.cfg.Server.Restore == false {
+	if !*m.cfg.Server.Restore {
 		return nil
 	}
 	metrics, err := m.file.ReadMetrics()
