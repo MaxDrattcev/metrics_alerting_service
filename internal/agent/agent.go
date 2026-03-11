@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"log"
 	"time"
@@ -20,23 +21,40 @@ func NewAgent(cfg *config.Config) *Agent {
 	}
 }
 
-func (a *Agent) Start() {
-	go a.startCollecting()
-
-	go a.startReporting()
+func (a *Agent) Start(ctx context.Context) {
+	go a.startCollecting(ctx)
+	go a.startReporting(ctx)
 }
 
-func (a *Agent) startCollecting() {
+func (a *Agent) startCollecting(ctx context.Context) {
 	for {
-		a.collector.Collect()
-		time.Sleep(a.cfg.Client.GetPollInterval())
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			a.collector.Collect()
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(a.cfg.Client.GetPollInterval()):
+		}
 	}
 }
 
-func (a *Agent) startReporting() {
+func (a *Agent) startReporting(ctx context.Context) {
 	for {
-		a.sendAllMetrics()
-		time.Sleep(a.cfg.Client.GetReportInterval())
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			a.sendAllMetrics()
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(a.cfg.Client.GetReportInterval()):
+		}
 	}
 }
 

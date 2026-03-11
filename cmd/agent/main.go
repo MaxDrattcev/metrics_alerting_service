@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/agent"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -36,9 +39,16 @@ func main() {
 
 	cfg := &config.Config{Client: client}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	agt := agent.NewAgent(cfg)
+	agt.Start(ctx)
 
-	agt.Start()
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
 
-	select {}
+	log.Println("Shutting down agent...")
+	cancel()
 }

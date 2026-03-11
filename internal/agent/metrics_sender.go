@@ -53,7 +53,7 @@ func (s *MetricsSender) SendGauge(name string, value float64) error {
 func (s *MetricsSender) SendGaugeJSON(name string, value float64) error {
 	metric := models.Metrics{
 		ID:    name,
-		MType: "gauge",
+		MType: models.Gauge,
 		Value: &value,
 	}
 	return s.sendMetricJSONGzip(metric)
@@ -78,7 +78,7 @@ func (s *MetricsSender) SendCounter(name string, value int64) error {
 func (s *MetricsSender) SendCounterJSON(name string, value int64) error {
 	metric := models.Metrics{
 		ID:    name,
-		MType: "counter",
+		MType: models.Counter,
 		Delta: &value,
 	}
 	return s.sendMetricJSONGzip(metric)
@@ -93,7 +93,7 @@ func (s *MetricsSender) sendMetricJSONGzip(metric models.Metrics) error {
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
 	if _, err := gz.Write(payload); err != nil {
-		_ = gz.Close()
+		gz.Close()
 		return fmt.Errorf("gzip write: %w", err)
 	}
 	if err := gz.Close(); err != nil {
