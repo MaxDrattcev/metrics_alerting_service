@@ -39,6 +39,16 @@ func (m *MockService) GetAllMetrics() ([]models.Metrics, error) {
 	return args.Get(0).([]models.Metrics), args.Error(1)
 }
 
+func (m *MockService) WriteMetricsFile() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
+func (m *MockService) LoadMeticsFromFile() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func floatPtr(v float64) *float64 {
 	return &v
 }

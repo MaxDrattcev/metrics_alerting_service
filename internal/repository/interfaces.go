@@ -11,3 +11,9 @@ type MetricsStorage interface {
 
 	GetAllMetrics() ([]models.Metrics, error)
 }
+
+type FileStorage interface {
+	WriteMetrics(metrics []models.Metrics) error
+
+	ReadMetrics() ([]models.Metrics, error)
+}

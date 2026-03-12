@@ -13,13 +13,20 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Address string `yaml:"address"`
+	Address         string `yaml:"address"`
+	StoreInterval   *int64 `yaml:"storeInterval"`
+	FileStoragePath string `yaml:"fileStoragePath"`
+	Restore         *bool  `yaml:"restore"`
 }
 
 type ClientConfig struct {
 	Address        string `yaml:"address"`
 	PollInterval   int64  `yaml:"pollInterval"`
 	ReportInterval int64  `yaml:"reportInterval"`
+}
+
+func (s *ServerConfig) GetStoreInterval() time.Duration {
+	return time.Duration(*s.StoreInterval) * time.Second
 }
 
 func (c *ClientConfig) GetPollInterval() time.Duration {
