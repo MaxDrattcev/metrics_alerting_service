@@ -9,13 +9,15 @@ import (
 )
 
 func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handler.MetricsHandler) http.Handler {
-	router := gin.Default()
+	router := gin.New()
+
+	router.Use(gin.Recovery())
+
+	router.Use(middleware.Logger(), middleware.Compress())
 
 	if files, err := filepath.Glob("templates/*"); err == nil && len(files) > 0 {
 		router.LoadHTMLGlob("templates/*")
 	}
-
-	router.Use(middleware.Logger(), middleware.Compress())
 
 	router.POST("/update/:type/:name/:value", metricsHandler.Update)
 	router.GET("/value/:type/:name", metricsHandler.GetMetric)
