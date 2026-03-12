@@ -28,7 +28,7 @@ func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handl
 	router.POST("/value", metricsJSONHandler.GetMetric)
 	router.GET("/metrics", metricsJSONHandler.GetAllMetrics)
 
-	router.GET("/ping", handler.PingDb(pool))
+	router.GET("/ping", handler.PingDB(pool))
 
 	return router
 }

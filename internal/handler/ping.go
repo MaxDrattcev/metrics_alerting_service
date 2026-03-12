@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func PingDb(pool *pgxpool.Pool) gin.HandlerFunc {
+func PingDB(pool *pgxpool.Pool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if pool == nil {
 			c.Status(http.StatusInternalServerError)
