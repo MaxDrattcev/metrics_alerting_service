@@ -22,7 +22,7 @@ func TestNewApp(t *testing.T) {
 		},
 	}
 
-	app := NewApp(cfg)
+	app := NewApp(cfg, nil)
 
 	require.NotNil(t, app)
 	assert.NotNil(t, app.handler)
@@ -33,7 +33,7 @@ func TestNewApp(t *testing.T) {
 func TestSetupRouter(t *testing.T) {
 	mockHandler := &mockMetricsHandler{}
 
-	router := SetupRouter(mockHandler, mockHandler)
+	router := SetupRouter(mockHandler, mockHandler, nil)
 
 	require.NotNil(t, router)
 

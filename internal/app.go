@@ -6,6 +6,7 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/repository"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/scheduler"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"net/http"
 )
@@ -16,7 +17,7 @@ type App struct {
 	config  *config.Config
 }
 
-func NewApp(cfg *config.Config) *App {
+func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	metricsRepo := repository.NewMetricsStorage()
 	metricsFile := repository.NewFileStorage(cfg.Server.FileStoragePath)
 	metricsService := service.NewMetricsService(metricsRepo, metricsFile, cfg)
@@ -29,7 +30,7 @@ func NewApp(cfg *config.Config) *App {
 	metricsHandler := handler.NewMetricsHandler(metricsService)
 	metricsJSONHandler := handler.NewMetricsJSONHandler(metricsService)
 
-	router := SetupRouter(metricsHandler, metricsJSONHandler)
+	router := SetupRouter(metricsHandler, metricsJSONHandler, pool)
 
 	return &App{
 		handler: metricsHandler,

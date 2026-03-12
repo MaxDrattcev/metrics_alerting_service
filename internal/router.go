@@ -4,11 +4,12 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/handler"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"net/http"
 	"path/filepath"
 )
 
-func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handler.MetricsHandler) http.Handler {
+func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handler.MetricsHandler, pool *pgxpool.Pool) http.Handler {
 	router := gin.New()
 
 	router.Use(gin.Recovery())
@@ -26,6 +27,8 @@ func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handl
 	router.POST("/update", metricsJSONHandler.Update)
 	router.POST("/value", metricsJSONHandler.GetMetric)
 	router.GET("/metrics", metricsJSONHandler.GetAllMetrics)
+
+	router.GET("/ping", handler.PingDb(pool))
 
 	return router
 }

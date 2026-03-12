@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config/db"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 	"github.com/bytedance/gopkg/util/logger"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -27,6 +31,7 @@ func main() {
 		StoreInterval:   envVar.StoreInterval,
 		FileStoragePath: envVar.FileStoragePath,
 		Restore:         envVar.Restore,
+		DataBaseDSN:     envVar.DataBaseDSN,
 	}
 	if server.Address == "" {
 		server.Address = flags.Address
@@ -40,10 +45,25 @@ func main() {
 	if server.Restore == nil {
 		server.Restore = &flags.Restore
 	}
+	if server.DataBaseDSN == "" {
+		server.DataBaseDSN = flags.DataBaseDSN
+	}
 
 	cfg := &config.Config{Server: server}
 
-	app := internal.NewApp(cfg)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var pool *pgxpool.Pool
+	if cfg.Server.DataBaseDSN != "" {
+		var err error
+		pool, err = db.NewPool(ctx, cfg.Server.DataBaseDSN)
+		if err != nil {
+			log.Fatalf("Error connecting to database: %v", err)
+		}
+		defer pool.Close()
+	}
+	app := internal.NewApp(cfg, pool)
 
 	if err := app.Run(); err != nil {
 		log.Fatalf("Failed to run app: %v", err)
