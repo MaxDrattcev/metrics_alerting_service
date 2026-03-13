@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"sync"
@@ -11,13 +12,16 @@ type MemStorage struct {
 	mu      sync.RWMutex
 }
 
-func NewMetricsStorage() MetricsStorage {
+func NewMemStorage() MetricsStorage {
 	return &MemStorage{
 		metrics: make(map[string]models.Metrics),
 	}
 }
 
-func (m *MemStorage) UpdateGauge(metric models.Metrics) error {
+func (m *MemStorage) UpdateGauge(ctx context.Context, metric models.Metrics) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if metric.Value == nil {
@@ -28,7 +32,10 @@ func (m *MemStorage) UpdateGauge(metric models.Metrics) error {
 	return nil
 }
 
-func (m *MemStorage) UpdateCounter(metric models.Metrics) error {
+func (m *MemStorage) UpdateCounter(ctx context.Context, metric models.Metrics) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	key := m.key(metric.ID, metric.MType)
@@ -51,7 +58,10 @@ func (m *MemStorage) exists(key string) bool {
 	return exists
 }
 
-func (m *MemStorage) GetMetric(mType string, mName string) (models.Metrics, error) {
+func (m *MemStorage) GetMetric(ctx context.Context, mType string, mName string) (models.Metrics, error) {
+	if err := ctx.Err(); err != nil {
+		return models.Metrics{}, err
+	}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	key := m.key(mName, mType)
@@ -62,7 +72,10 @@ func (m *MemStorage) GetMetric(mType string, mName string) (models.Metrics, erro
 	return metric, nil
 }
 
-func (m *MemStorage) GetAllMetrics() ([]models.Metrics, error) {
+func (m *MemStorage) GetAllMetrics(ctx context.Context) ([]models.Metrics, error) {
+	if err := ctx.Err(); err != nil {
+		return []models.Metrics{}, err
+	}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	metrics := make([]models.Metrics, 0, len(m.metrics))

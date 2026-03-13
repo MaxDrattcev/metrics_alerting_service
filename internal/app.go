@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"context"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/handler"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/repository"
@@ -9,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"net/http"
+	"time"
 )
 
 type App struct {
@@ -18,14 +20,23 @@ type App struct {
 }
 
 func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
-	metricsRepo := repository.NewMetricsStorage()
+	var metricsRepo repository.MetricsStorage
+	if cfg.Server.DataBaseDSN != "" {
+		metricsRepo = repository.NewPostgresStorage(pool)
+	} else {
+		metricsRepo = repository.NewMemStorage()
+	}
+
 	metricsFile := repository.NewFileStorage(cfg.Server.FileStoragePath)
 	metricsService := service.NewMetricsService(metricsRepo, metricsFile, cfg)
-	if err := metricsService.LoadMeticsFromFile(); err != nil {
+
+	ctxLoad, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := metricsService.LoadMeticsFromFile(ctxLoad); err != nil {
 		log.Printf("load metrics from file: %v", err)
 	}
 	metricsScheduler := scheduler.NewMetricsScheduler(cfg, metricsService)
-	go metricsScheduler.RunWriteMetricsFile()
+	go metricsScheduler.RunWriteMetricsFile(context.Background())
 
 	metricsHandler := handler.NewMetricsHandler(metricsService)
 	metricsJSONHandler := handler.NewMetricsJSONHandler(metricsService)

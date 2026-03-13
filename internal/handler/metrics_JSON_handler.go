@@ -25,6 +25,9 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
 		return
 	}
+
+	ctx := c.Request.Context()
+
 	if c.GetHeader("Content-Type") != "application/json" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Content-Type must be application/json"})
 		return
@@ -45,13 +48,13 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 		return
 	}
 	if metric.MType == models.Gauge {
-		if err := m.service.UpdateGauge(metric.MType, metric.ID, metric.Value); err != nil {
+		if err := m.service.UpdateGauge(ctx, metric.MType, metric.ID, metric.Value); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 	}
 	if metric.MType == models.Counter {
-		if err := m.service.UpdateCounter(metric.MType, metric.ID, metric.Delta); err != nil {
+		if err := m.service.UpdateCounter(ctx, metric.MType, metric.ID, metric.Delta); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -88,6 +91,9 @@ func (m *metricsJSONHandler) GetMetric(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
 		return
 	}
+
+	ctx := c.Request.Context()
+
 	if c.GetHeader("Content-Type") != "application/json" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Content-Type must be application/json"})
 		return
@@ -112,7 +118,7 @@ func (m *metricsJSONHandler) GetMetric(c *gin.Context) {
 		return
 	}
 
-	value, err := m.service.GetMetric(metric.MType, metric.ID)
+	value, err := m.service.GetMetric(ctx, metric.MType, metric.ID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -145,9 +151,13 @@ func (m *metricsJSONHandler) GetAllMetrics(c *gin.Context) {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
 		return
 	}
-	metrics, err := m.service.GetAllMetrics()
+
+	ctx := c.Request.Context()
+
+	metrics, err := m.service.GetAllMetrics(ctx)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, metrics)
 }

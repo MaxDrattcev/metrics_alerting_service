@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/gin-gonic/gin"
@@ -16,22 +17,22 @@ type MockService struct {
 	mock.Mock
 }
 
-func (m *MockService) UpdateGauge(mType string, mName string, mValue *float64) error {
+func (m *MockService) UpdateGauge(ctx context.Context, mType string, mName string, mValue *float64) error {
 	args := m.Called(mType, mName, mValue)
 	return args.Error(0)
 }
 
-func (m *MockService) UpdateCounter(mType string, mName string, mValue *int64) error {
+func (m *MockService) UpdateCounter(ctx context.Context, mType string, mName string, mValue *int64) error {
 	args := m.Called(mType, mName, mValue)
 	return args.Error(0)
 }
 
-func (m *MockService) GetMetric(mType string, mName string) (string, error) {
+func (m *MockService) GetMetric(ctx context.Context, mType string, mName string) (string, error) {
 	args := m.Called(mType, mName)
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockService) GetAllMetrics() ([]models.Metrics, error) {
+func (m *MockService) GetAllMetrics(ctx context.Context) ([]models.Metrics, error) {
 	args := m.Called()
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -39,12 +40,12 @@ func (m *MockService) GetAllMetrics() ([]models.Metrics, error) {
 	return args.Get(0).([]models.Metrics), args.Error(1)
 }
 
-func (m *MockService) WriteMetricsFile() error {
+func (m *MockService) WriteMetricsFile(ctx context.Context) error {
 	args := m.Called()
 	return args.Error(0)
 }
 
-func (m *MockService) LoadMeticsFromFile() error {
+func (m *MockService) LoadMeticsFromFile(ctx context.Context) error {
 	args := m.Called()
 	return args.Error(0)
 }

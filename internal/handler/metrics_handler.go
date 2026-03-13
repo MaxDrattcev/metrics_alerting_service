@@ -29,6 +29,8 @@ func (m *metricsHandler) Update(c *gin.Context) {
 		return
 	}
 
+	ctx := c.Request.Context()
+
 	mType, mName, mValue, ok := m.parsePath(c)
 	if !ok {
 		return
@@ -44,7 +46,7 @@ func (m *metricsHandler) Update(c *gin.Context) {
 			c.String(http.StatusBadRequest, incorrectValue)
 			return
 		}
-		if err := m.service.UpdateGauge(mType, mName, &floatVal); err != nil {
+		if err := m.service.UpdateGauge(ctx, mType, mName, &floatVal); err != nil {
 			c.String(http.StatusBadRequest, incorrectValue)
 			return
 		}
@@ -56,7 +58,7 @@ func (m *metricsHandler) Update(c *gin.Context) {
 			c.String(http.StatusBadRequest, incorrectValue)
 			return
 		}
-		if err := m.service.UpdateCounter(mType, mName, &intVal); err != nil {
+		if err := m.service.UpdateCounter(ctx, mType, mName, &intVal); err != nil {
 			c.String(http.StatusBadRequest, incorrectValue)
 			return
 		}
@@ -98,6 +100,8 @@ func (m *metricsHandler) GetMetric(c *gin.Context) {
 		return
 	}
 
+	ctx := c.Request.Context()
+
 	mType := c.Param("type")
 	mName := c.Param("name")
 	if mType == "" {
@@ -114,7 +118,7 @@ func (m *metricsHandler) GetMetric(c *gin.Context) {
 		return
 	}
 
-	value, err := m.service.GetMetric(mType, mName)
+	value, err := m.service.GetMetric(ctx, mType, mName)
 	if err != nil {
 		c.String(http.StatusNotFound, err.Error())
 		return
@@ -128,7 +132,9 @@ func (m *metricsHandler) GetAllMetrics(c *gin.Context) {
 		return
 	}
 
-	metrics, err := m.service.GetAllMetrics()
+	ctx := c.Request.Context()
+
+	metrics, err := m.service.GetAllMetrics(ctx)
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return

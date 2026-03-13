@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS metrics (
     value DOUBLE PRECISION
 );
 
-CREATE INDEX IF NOT EXISTS idx_metrics_id ON metrics(id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_metrics_id ON metrics(id);
