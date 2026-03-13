@@ -8,6 +8,9 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config/db"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 	"github.com/bytedance/gopkg/util/logger"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"os"
@@ -62,6 +65,16 @@ func main() {
 			log.Fatalf("Error connecting to database: %v", err)
 		}
 		defer pool.Close()
+
+		m, err := migrate.New("file://migrations", cfg.Server.DataBaseDSN)
+		if err != nil {
+			log.Fatalf("migrate init: %v", err)
+		}
+		defer m.Close()
+
+		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+			log.Fatalf("migrate up: %v", err)
+		}
 	}
 	app := internal.NewApp(cfg, pool)
 

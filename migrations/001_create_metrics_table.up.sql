@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS metrics (
+    id VARCHAR(100) NOT NULL DEFAULT '',
+    type VARCHAR(100) NOT NULL DEFAULT '',
+    delta BIGINT,
+    value DOUBLE PRECISION
+);
+
+CREATE INDEX IF NOT EXISTS idx_metrics_id ON metrics(id);
