@@ -177,4 +177,4 @@ func (m *metricsHandler) GetAllMetrics(c *gin.Context) {
 	})
 }
 
-func (m *metricsHandler) UpdateMetrics(c *gin.Context) { return }
+func (m *metricsHandler) UpdateMetrics(c *gin.Context) {}

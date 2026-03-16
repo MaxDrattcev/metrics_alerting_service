@@ -100,9 +100,11 @@ func (p *PostgresStorage) UpdateMetrics(ctx context.Context, metrics []models.Me
 	}
 	defer tx.Rollback(ctx)
 
-	query := "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, $3, $4) " +
-		"ON CONFLICT (id) DO UPDATE SET " +
-		"type = EXCLUDED.type, value = EXCLUDED.value, delta = EXCLUDED.delta"
+	query := "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET " +
+		"type = EXCLUDED.type, " +
+		"value = EXCLUDED.value, " +
+		"delta = CASE WHEN EXCLUDED.type = 'counter' " +
+		"THEN COALESCE(metrics.delta, 0) + COALESCE(EXCLUDED.delta, 0) ELSE EXCLUDED.delta END"
 
 	for _, metric := range metrics {
 		_, err := tx.Exec(ctx, query, metric.ID, metric.MType, metric.Delta, metric.Value)
