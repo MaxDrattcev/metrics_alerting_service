@@ -62,3 +62,8 @@ func (m *mockMetricsHandler) GetMetric(c *gin.Context) {
 func (m *mockMetricsHandler) GetAllMetrics(c *gin.Context) {
 	c.String(http.StatusOK, "metrics")
 }
+
+func (m *mockMetricsHandler) UpdateMetrics(c *gin.Context) {
+	m.called = true
+	c.String(http.StatusOK, "")
+}

@@ -39,6 +39,9 @@ func (m *MockService) GetAllMetrics(ctx context.Context) ([]models.Metrics, erro
 	}
 	return args.Get(0).([]models.Metrics), args.Error(1)
 }
+func (m *MockService) UpdateMetrics(ctx context.Context, metrics []models.Metrics) error {
+	return m.Called(ctx, metrics).Error(0)
+}
 
 func (m *MockService) WriteMetricsFile(ctx context.Context) error {
 	args := m.Called()

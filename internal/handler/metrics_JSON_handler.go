@@ -161,3 +161,40 @@ func (m *metricsJSONHandler) GetAllMetrics(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, metrics)
 }
+
+func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
+	if c.Request.Method != http.MethodPost {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	if c.GetHeader("Content-Type") != "application/json" {
+		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Content-Type must be application/json"})
+		return
+	}
+
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	defer c.Request.Body.Close()
+
+	var metrics []models.Metrics
+	if err := json.Unmarshal(body, &metrics); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	for _, metric := range metrics {
+		if !m.validateRequest(c, metric) {
+			return
+		}
+	}
+
+	if err := m.service.UpdateMetrics(ctx, metrics); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+}

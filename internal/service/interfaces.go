@@ -14,6 +14,10 @@ type MetricsService interface {
 
 	GetAllMetrics(context.Context) ([]models.Metrics, error)
 
+	UpdateMetrics(ctx context.Context, metrics []models.Metrics) error
+}
+
+type FileService interface {
 	WriteMetricsFile(ctx context.Context) error
 
 	LoadMeticsFromFile(ctx context.Context) error

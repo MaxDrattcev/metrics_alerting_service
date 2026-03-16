@@ -115,3 +115,35 @@ func (s *MetricsSender) sendMetricJSONGzip(metric models.Metrics) error {
 	}
 	return nil
 }
+
+func (s *MetricsSender) SendAllMetricsBuffer(metrics []models.Metrics) error {
+	payload, err := json.Marshal(&metrics)
+	if err != nil {
+		return fmt.Errorf("marshal metric: %w", err)
+	}
+
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	if _, err := gz.Write(payload); err != nil {
+		gz.Close()
+		return fmt.Errorf("gzip write: %w", err)
+	}
+	if err := gz.Close(); err != nil {
+		return fmt.Errorf("gzip close: %w", err)
+	}
+
+	url := fmt.Sprintf("http://%s/updates", s.cfg.Client.Address)
+	resp, err := s.client.R().
+		SetHeader(contentType, jsonType).
+		SetHeader("Content-Encoding", "gzip").
+		SetHeader("Accept-Encoding", "gzip").
+		SetBody(buf.Bytes()).
+		Post(url)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
+	}
+	return nil
+}

@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"log"
 	"time"
 )
@@ -48,7 +49,7 @@ func (a *Agent) startReporting(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			a.sendAllMetrics()
+			a.sendMetricsBuffer()
 		}
 		select {
 		case <-ctx.Done():
@@ -68,5 +69,19 @@ func (a *Agent) sendAllMetrics() {
 	pollCount := a.collector.GetPollCount()
 	if err := a.sender.SendCounterJSON("PollCount", pollCount); err != nil {
 		log.Printf("Failed to send counter PollCounter: %v", err)
+	}
+}
+
+func (a *Agent) sendMetricsBuffer() {
+	var metrics []models.Metrics
+	gauges := a.collector.GetAllGauges()
+	for name, value := range gauges {
+		metrics = append(metrics, models.Metrics{ID: name, MType: models.Gauge, Value: &value})
+	}
+	pollCount := a.collector.GetPollCount()
+	metrics = append(metrics, models.Metrics{ID: "PollCount", MType: models.Counter, Delta: &pollCount})
+
+	if err := a.sender.SendAllMetricsBuffer(metrics); err != nil {
+		log.Printf("Failed to send buffer metrics: %v", err)
 	}
 }

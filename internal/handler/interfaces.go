@@ -10,4 +10,6 @@ type MetricsHandler interface {
 	GetMetric(c *gin.Context)
 
 	GetAllMetrics(c *gin.Context)
+
+	UpdateMetrics(c *gin.Context)
 }

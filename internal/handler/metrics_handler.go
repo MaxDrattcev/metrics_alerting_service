@@ -176,3 +176,5 @@ func (m *metricsHandler) GetAllMetrics(c *gin.Context) {
 		"metrics": views,
 	})
 }
+
+func (m *metricsHandler) UpdateMetrics(c *gin.Context) { return }

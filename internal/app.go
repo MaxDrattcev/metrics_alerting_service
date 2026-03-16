@@ -29,13 +29,14 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 
 	metricsFile := repository.NewFileStorage(cfg.Server.FileStoragePath)
 	metricsService := service.NewMetricsService(metricsRepo, metricsFile, cfg)
+	fileService := service.NewMetricsFileService(metricsRepo, metricsFile, cfg)
 
 	ctxLoad, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := metricsService.LoadMeticsFromFile(ctxLoad); err != nil {
+	if err := fileService.LoadMeticsFromFile(ctxLoad); err != nil {
 		log.Printf("load metrics from file: %v", err)
 	}
-	metricsScheduler := scheduler.NewMetricsScheduler(cfg, metricsService)
+	metricsScheduler := scheduler.NewMetricsScheduler(cfg, fileService)
 	go metricsScheduler.RunWriteMetricsFile(context.Background())
 
 	metricsHandler := handler.NewMetricsHandler(metricsService)

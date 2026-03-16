@@ -95,35 +95,9 @@ func (m *metricsService) GetAllMetrics(ctx context.Context) ([]models.Metrics, e
 	return metrics, nil
 }
 
-func (m *metricsService) WriteMetricsFile(ctx context.Context) error {
-	metrics, err := m.repo.GetAllMetrics(ctx)
-	if err != nil {
+func (m *metricsService) UpdateMetrics(ctx context.Context, metrics []models.Metrics) error {
+	if err := m.repo.UpdateMetrics(ctx, metrics); err != nil {
 		return err
-	}
-	if err := m.file.WriteMetrics(metrics); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *metricsService) LoadMeticsFromFile(ctx context.Context) error {
-	if !*m.cfg.Server.Restore {
-		return nil
-	}
-	metrics, err := m.file.ReadMetrics()
-	if err != nil {
-		return err
-	}
-	for _, metric := range metrics {
-		if metric.MType == models.Gauge {
-			if err := m.repo.UpdateGauge(ctx, metric); err != nil {
-				return err
-			}
-		} else {
-			if err := m.repo.UpdateCounter(ctx, metric); err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }

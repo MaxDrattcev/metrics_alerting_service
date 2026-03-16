@@ -13,6 +13,8 @@ type MetricsStorage interface {
 	GetMetric(ctx context.Context, mType string, mName string) (models.Metrics, error)
 
 	GetAllMetrics(ctx context.Context) ([]models.Metrics, error)
+
+	UpdateMetrics(ctx context.Context, metrics []models.Metrics) error
 }
 
 type FileStorage interface {

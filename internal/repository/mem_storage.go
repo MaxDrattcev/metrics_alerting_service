@@ -85,3 +85,25 @@ func (m *MemStorage) GetAllMetrics(ctx context.Context) ([]models.Metrics, error
 	}
 	return metrics, nil
 }
+
+func (m *MemStorage) UpdateMetrics(ctx context.Context, metrics []models.Metrics) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for _, metric := range metrics {
+		key := m.key(metric.ID, metric.MType)
+		if metric.MType == models.Counter {
+			if m.exists(key) {
+				existing := m.metrics[key]
+				if existing.Delta != nil && metric.Delta != nil {
+					*metric.Delta += *existing.Delta
+				}
+			}
+		}
+		m.metrics[key] = metric
+	}
+	return nil
+}

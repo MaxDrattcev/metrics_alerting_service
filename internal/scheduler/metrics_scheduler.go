@@ -9,14 +9,14 @@ import (
 )
 
 type MetricsScheduler struct {
-	cfg           *config.Config
-	metricService service.MetricsService
+	cfg         *config.Config
+	fileService service.FileService
 }
 
-func NewMetricsScheduler(cfg *config.Config, metricService service.MetricsService) *MetricsScheduler {
+func NewMetricsScheduler(cfg *config.Config, fileService service.FileService) *MetricsScheduler {
 	return &MetricsScheduler{
-		cfg:           cfg,
-		metricService: metricService}
+		cfg:         cfg,
+		fileService: fileService}
 }
 
 func (ms *MetricsScheduler) RunWriteMetricsFile(ctx context.Context) {
@@ -31,7 +31,7 @@ func (ms *MetricsScheduler) RunWriteMetricsFile(ctx context.Context) {
 			return
 		case <-ticker.C:
 			writeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			err := ms.metricService.WriteMetricsFile(writeCtx)
+			err := ms.fileService.WriteMetricsFile(writeCtx)
 			cancel()
 			if err != nil {
 				log.Printf("failed to write metrics file: %v", err)
