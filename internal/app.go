@@ -53,5 +53,6 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 
 func (a *App) Run() error {
 	log.Printf("Server starting on %s", a.config.Server.Address)
-	return http.ListenAndServe(a.config.Server.Address, a.router)
+	log.Fatal(http.ListenAndServe(a.config.Server.Address, a.router))
+	return nil
 }

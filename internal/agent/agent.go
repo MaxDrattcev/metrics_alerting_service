@@ -49,7 +49,7 @@ func (a *Agent) startReporting(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			a.sendMetricsBuffer()
+			a.sendMetricsBuffer(ctx)
 		}
 		select {
 		case <-ctx.Done():
@@ -72,7 +72,7 @@ func (a *Agent) sendAllMetrics() {
 	}
 }
 
-func (a *Agent) sendMetricsBuffer() {
+func (a *Agent) sendMetricsBuffer(ctx context.Context) {
 	var metrics []models.Metrics
 	gauges := a.collector.GetAllGauges()
 	for name, value := range gauges {
@@ -81,7 +81,7 @@ func (a *Agent) sendMetricsBuffer() {
 	pollCount := a.collector.GetPollCount()
 	metrics = append(metrics, models.Metrics{ID: "PollCount", MType: models.Counter, Delta: &pollCount})
 
-	if err := a.sender.SendAllMetricsBuffer(metrics); err != nil {
+	if err := a.sender.SendAllMetricsBuffer(ctx, metrics); err != nil {
 		log.Printf("Failed to send buffer metrics: %v", err)
 	}
 }
