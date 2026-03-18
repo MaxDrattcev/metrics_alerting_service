@@ -58,7 +58,7 @@ func (p *PostgresStorage) GetMetric(ctx context.Context, mType string, mName str
 	if err := ctx.Err(); err != nil {
 		return models.Metrics{}, err
 	}
-	query := "SELECT * FROM metrics WHERE type = $1 AND id = $2"
+	query := "SELECT id, type, delta, value FROM metrics WHERE type = $1 AND id = $2"
 
 	var metric models.Metrics
 	err := WithTxRetry(ctx, p.pool, func(tx pgx.Tx) error {
