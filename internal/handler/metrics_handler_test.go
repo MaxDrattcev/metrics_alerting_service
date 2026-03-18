@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"context"
 	"errors"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/mocks"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -12,46 +12,6 @@ import (
 	"net/http/httptest"
 	"testing"
 )
-
-type MockService struct {
-	mock.Mock
-}
-
-func (m *MockService) UpdateGauge(ctx context.Context, mType string, mName string, mValue *float64) error {
-	args := m.Called(mType, mName, mValue)
-	return args.Error(0)
-}
-
-func (m *MockService) UpdateCounter(ctx context.Context, mType string, mName string, mValue *int64) error {
-	args := m.Called(mType, mName, mValue)
-	return args.Error(0)
-}
-
-func (m *MockService) GetMetric(ctx context.Context, mType string, mName string) (string, error) {
-	args := m.Called(mType, mName)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockService) GetAllMetrics(ctx context.Context) ([]models.Metrics, error) {
-	args := m.Called()
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]models.Metrics), args.Error(1)
-}
-func (m *MockService) UpdateMetrics(ctx context.Context, metrics []models.Metrics) error {
-	return m.Called(ctx, metrics).Error(0)
-}
-
-func (m *MockService) WriteMetricsFile(ctx context.Context) error {
-	args := m.Called()
-	return args.Error(0)
-}
-
-func (m *MockService) LoadMeticsFromFile(ctx context.Context) error {
-	args := m.Called()
-	return args.Error(0)
-}
 
 func floatPtr(v float64) *float64 {
 	return &v
@@ -69,7 +29,7 @@ func TestMetricsHandler_Update_Gauge(t *testing.T) {
 		nameParam   string
 		valueParam  string
 		contentType string
-		setupMock   func(*MockService)
+		setupMock   func(*mocks.MockMetricsService)
 		wantStatus  int
 		wantErr     bool
 	}{
@@ -80,22 +40,11 @@ func TestMetricsHandler_Update_Gauge(t *testing.T) {
 			nameParam:   "testGauge",
 			valueParam:  "123.45",
 			contentType: "text/plain",
-			setupMock: func(m *MockService) {
-				m.On("UpdateGauge", models.Gauge, "testGauge", mock.AnythingOfType("*float64")).Return(nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("UpdateGauge", mock.Anything, models.Gauge, "testGauge", mock.AnythingOfType("*float64")).Return(nil)
 			},
 			wantStatus: http.StatusOK,
 			wantErr:    false,
-		},
-		{
-			name:        "invalid method GET",
-			method:      http.MethodGet,
-			typeParam:   "gauge",
-			nameParam:   "testGauge",
-			valueParam:  "123.45",
-			contentType: "text/plain",
-			setupMock:   func(m *MockService) {},
-			wantStatus:  http.StatusMethodNotAllowed,
-			wantErr:     false,
 		},
 		{
 			name:        "empty metric name",
@@ -104,7 +53,7 @@ func TestMetricsHandler_Update_Gauge(t *testing.T) {
 			nameParam:   "",
 			valueParam:  "123.45",
 			contentType: "text/plain",
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusNotFound,
 			wantErr:     false,
 		},
@@ -115,7 +64,7 @@ func TestMetricsHandler_Update_Gauge(t *testing.T) {
 			nameParam:   "testGauge",
 			valueParam:  "invalid",
 			contentType: "text/plain",
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusBadRequest,
 			wantErr:     false,
 		},
@@ -126,8 +75,8 @@ func TestMetricsHandler_Update_Gauge(t *testing.T) {
 			nameParam:   "testGauge",
 			valueParam:  "123.45",
 			contentType: "text/plain",
-			setupMock: func(m *MockService) {
-				m.On("UpdateGauge", models.Gauge, "testGauge", mock.AnythingOfType("*float64")).Return(errors.New("service error"))
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("UpdateGauge", mock.Anything, models.Gauge, "testGauge", mock.AnythingOfType("*float64")).Return(errors.New("service error"))
 			},
 			wantStatus: http.StatusBadRequest,
 			wantErr:    false,
@@ -136,22 +85,19 @@ func TestMetricsHandler_Update_Gauge(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := new(MockService)
+			mockService := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockService)
 
 			handler := NewMetricsHandler(mockService)
 
-			// Создаем Gin контекст для теста
 			gin.SetMode(gin.TestMode)
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 
-			// Устанавливаем request
 			req := httptest.NewRequest(tt.method, "/update/"+tt.typeParam+"/"+tt.nameParam+"/"+tt.valueParam, nil)
 			req.Header.Set("Content-Type", tt.contentType)
 			c.Request = req
 
-			// Устанавливаем параметры пути вручную
 			c.Params = gin.Params{
 				{Key: "type", Value: tt.typeParam},
 				{Key: "name", Value: tt.nameParam},
@@ -179,7 +125,7 @@ func TestMetricsHandler_Update_Counter(t *testing.T) {
 		nameParam   string
 		valueParam  string
 		contentType string
-		setupMock   func(*MockService)
+		setupMock   func(*mocks.MockMetricsService)
 		wantStatus  int
 	}{
 		{
@@ -189,8 +135,8 @@ func TestMetricsHandler_Update_Counter(t *testing.T) {
 			nameParam:   "testCounter",
 			valueParam:  "5",
 			contentType: "text/plain",
-			setupMock: func(m *MockService) {
-				m.On("UpdateCounter", models.Counter, "testCounter", mock.AnythingOfType("*int64")).Return(nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("UpdateCounter", mock.Anything, models.Counter, "testCounter", mock.AnythingOfType("*int64")).Return(nil)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -201,7 +147,7 @@ func TestMetricsHandler_Update_Counter(t *testing.T) {
 			nameParam:   "testCounter",
 			valueParam:  "invalid",
 			contentType: "text/plain",
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusBadRequest,
 		},
 		{
@@ -211,7 +157,7 @@ func TestMetricsHandler_Update_Counter(t *testing.T) {
 			nameParam:   "",
 			valueParam:  "5",
 			contentType: "text/plain",
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusNotFound,
 		},
 		{
@@ -221,8 +167,8 @@ func TestMetricsHandler_Update_Counter(t *testing.T) {
 			nameParam:   "testCounter",
 			valueParam:  "5",
 			contentType: "text/plain",
-			setupMock: func(m *MockService) {
-				m.On("UpdateCounter", models.Counter, "testCounter", mock.AnythingOfType("*int64")).Return(errors.New("service error"))
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("UpdateCounter", mock.Anything, models.Counter, "testCounter", mock.AnythingOfType("*int64")).Return(errors.New("service error"))
 			},
 			wantStatus: http.StatusBadRequest,
 		},
@@ -230,7 +176,7 @@ func TestMetricsHandler_Update_Counter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := new(MockService)
+			mockService := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockService)
 
 			handler := NewMetricsHandler(mockService)
@@ -291,7 +237,7 @@ func TestMetricsHandler_Update_InvalidMetricType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := new(MockService)
+			mockService := mocks.NewMockMetricsService(t)
 			handler := NewMetricsHandler(mockService)
 
 			gin.SetMode(gin.TestMode)
@@ -321,7 +267,7 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 		method     string
 		typeParam  string
 		nameParam  string
-		setupMock  func(*MockService)
+		setupMock  func(*mocks.MockMetricsService)
 		wantStatus int
 		wantBody   string
 	}{
@@ -330,8 +276,8 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 			method:    http.MethodGet,
 			typeParam: "gauge",
 			nameParam: "testGauge",
-			setupMock: func(m *MockService) {
-				m.On("GetMetric", models.Gauge, "testGauge").Return("123.45", nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetMetric", mock.Anything, models.Gauge, "testGauge").Return("123.45", nil)
 			},
 			wantStatus: http.StatusOK,
 			wantBody:   "123.45",
@@ -341,27 +287,18 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 			method:    http.MethodGet,
 			typeParam: "counter",
 			nameParam: "testCounter",
-			setupMock: func(m *MockService) {
-				m.On("GetMetric", models.Counter, "testCounter").Return("5", nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetMetric", mock.Anything, models.Counter, "testCounter").Return("5", nil)
 			},
 			wantStatus: http.StatusOK,
 			wantBody:   "5",
-		},
-		{
-			name:       "invalid method POST",
-			method:     http.MethodPost,
-			typeParam:  "gauge",
-			nameParam:  "testGauge",
-			setupMock:  func(m *MockService) {},
-			wantStatus: http.StatusMethodNotAllowed,
-			wantBody:   methodNotAllowed,
 		},
 		{
 			name:       "empty metric type",
 			method:     http.MethodGet,
 			typeParam:  "",
 			nameParam:  "testGauge",
-			setupMock:  func(m *MockService) {},
+			setupMock:  func(*mocks.MockMetricsService) {},
 			wantStatus: http.StatusNotFound,
 			wantBody:   "Type cannot be empty",
 		},
@@ -370,7 +307,7 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 			method:     http.MethodGet,
 			typeParam:  "gauge",
 			nameParam:  "",
-			setupMock:  func(m *MockService) {},
+			setupMock:  func(*mocks.MockMetricsService) {},
 			wantStatus: http.StatusNotFound,
 			wantBody:   "Name cannot be empty",
 		},
@@ -379,7 +316,7 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 			method:     http.MethodGet,
 			typeParam:  "invalid",
 			nameParam:  "testMetric",
-			setupMock:  func(m *MockService) {},
+			setupMock:  func(*mocks.MockMetricsService) {},
 			wantStatus: http.StatusNotFound,
 			wantBody:   incorrectType,
 		},
@@ -388,8 +325,8 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 			method:    http.MethodGet,
 			typeParam: "gauge",
 			nameParam: "nonExistent",
-			setupMock: func(m *MockService) {
-				m.On("GetMetric", models.Gauge, "nonExistent").Return("", errors.New("metric not found"))
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetMetric", mock.Anything, models.Gauge, "nonExistent").Return("", errors.New("metric not found"))
 			},
 			wantStatus: http.StatusNotFound,
 			wantBody:   "metric not found",
@@ -399,8 +336,8 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 			method:    http.MethodGet,
 			typeParam: "gauge",
 			nameParam: "testGauge",
-			setupMock: func(m *MockService) {
-				m.On("GetMetric", models.Gauge, "testGauge").Return("", errors.New("service error"))
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetMetric", mock.Anything, models.Gauge, "testGauge").Return("", errors.New("service error"))
 			},
 			wantStatus: http.StatusNotFound,
 			wantBody:   "service error",
@@ -410,8 +347,8 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 			method:    http.MethodGet,
 			typeParam: "gauge",
 			nameParam: "zeroGauge",
-			setupMock: func(m *MockService) {
-				m.On("GetMetric", models.Gauge, "zeroGauge").Return("0", nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetMetric", mock.Anything, models.Gauge, "zeroGauge").Return("0", nil)
 			},
 			wantStatus: http.StatusOK,
 			wantBody:   "0",
@@ -421,8 +358,8 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 			method:    http.MethodGet,
 			typeParam: "counter",
 			nameParam: "zeroCounter",
-			setupMock: func(m *MockService) {
-				m.On("GetMetric", models.Counter, "zeroCounter").Return("0", nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetMetric", mock.Anything, models.Counter, "zeroCounter").Return("0", nil)
 			},
 			wantStatus: http.StatusOK,
 			wantBody:   "0",
@@ -431,7 +368,7 @@ func TestMetricsHandler_GetMetric(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := new(MockService)
+			mockService := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockService)
 
 			handler := NewMetricsHandler(mockService)
@@ -466,26 +403,18 @@ func TestMetricsHandler_GetAllMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
 		method     string
-		setupMock  func(*MockService)
+		setupMock  func(*mocks.MockMetricsService)
 		wantStatus int
 		wantErr    bool
 	}{
 		{
 			name:   "successful get all metrics",
 			method: http.MethodGet,
-			setupMock: func(m *MockService) {
-				m.On("GetAllMetrics").Return(
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetAllMetrics", mock.Anything).Return(
 					[]models.Metrics{
-						{
-							ID:    "gauge1",
-							MType: models.Gauge,
-							Value: floatPtr(123.45),
-						},
-						{
-							ID:    "counter1",
-							MType: models.Counter,
-							Delta: int64Ptr(5),
-						},
+						{ID: "gauge1", MType: models.Gauge, Value: floatPtr(123.45)},
+						{ID: "counter1", MType: models.Counter, Delta: int64Ptr(5)},
 					},
 					nil,
 				)
@@ -496,30 +425,17 @@ func TestMetricsHandler_GetAllMetrics(t *testing.T) {
 		{
 			name:   "empty metrics list",
 			method: http.MethodGet,
-			setupMock: func(m *MockService) {
-				m.On("GetAllMetrics").Return(
-					[]models.Metrics{},
-					nil,
-				)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetAllMetrics", mock.Anything).Return([]models.Metrics{}, nil)
 			},
 			wantStatus: http.StatusOK,
 			wantErr:    false,
 		},
 		{
-			name:       "invalid method POST",
-			method:     http.MethodPost,
-			setupMock:  func(m *MockService) {},
-			wantStatus: http.StatusMethodNotAllowed, // Ожидаем 405
-			wantErr:    false,
-		},
-		{
 			name:   "service error",
 			method: http.MethodGet,
-			setupMock: func(m *MockService) {
-				m.On("GetAllMetrics").Return(
-					nil,
-					errors.New("service error"),
-				)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetAllMetrics", mock.Anything).Return(nil, errors.New("service error"))
 			},
 			wantStatus: http.StatusInternalServerError,
 			wantErr:    false,
@@ -527,15 +443,9 @@ func TestMetricsHandler_GetAllMetrics(t *testing.T) {
 		{
 			name:   "single gauge metric",
 			method: http.MethodGet,
-			setupMock: func(m *MockService) {
-				m.On("GetAllMetrics").Return(
-					[]models.Metrics{
-						{
-							ID:    "gauge1",
-							MType: models.Gauge,
-							Value: floatPtr(123.45),
-						},
-					},
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetAllMetrics", mock.Anything).Return(
+					[]models.Metrics{{ID: "gauge1", MType: models.Gauge, Value: floatPtr(123.45)}},
 					nil,
 				)
 			},
@@ -545,15 +455,9 @@ func TestMetricsHandler_GetAllMetrics(t *testing.T) {
 		{
 			name:   "single counter metric",
 			method: http.MethodGet,
-			setupMock: func(m *MockService) {
-				m.On("GetAllMetrics").Return(
-					[]models.Metrics{
-						{
-							ID:    "counter1",
-							MType: models.Counter,
-							Delta: int64Ptr(5),
-						},
-					},
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetAllMetrics", mock.Anything).Return(
+					[]models.Metrics{{ID: "counter1", MType: models.Counter, Delta: int64Ptr(5)}},
 					nil,
 				)
 			},
@@ -563,19 +467,11 @@ func TestMetricsHandler_GetAllMetrics(t *testing.T) {
 		{
 			name:   "metrics with nil values",
 			method: http.MethodGet,
-			setupMock: func(m *MockService) {
-				m.On("GetAllMetrics").Return(
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetAllMetrics", mock.Anything).Return(
 					[]models.Metrics{
-						{
-							ID:    "nilGauge",
-							MType: models.Gauge,
-							Value: nil,
-						},
-						{
-							ID:    "nilCounter",
-							MType: models.Counter,
-							Delta: nil,
-						},
+						{ID: "nilGauge", MType: models.Gauge, Value: nil},
+						{ID: "nilCounter", MType: models.Counter, Delta: nil},
 					},
 					nil,
 				)
@@ -586,29 +482,13 @@ func TestMetricsHandler_GetAllMetrics(t *testing.T) {
 		{
 			name:   "multiple metrics",
 			method: http.MethodGet,
-			setupMock: func(m *MockService) {
-				m.On("GetAllMetrics").Return(
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetAllMetrics", mock.Anything).Return(
 					[]models.Metrics{
-						{
-							ID:    "gauge1",
-							MType: models.Gauge,
-							Value: floatPtr(123.45),
-						},
-						{
-							ID:    "gauge2",
-							MType: models.Gauge,
-							Value: floatPtr(67.89),
-						},
-						{
-							ID:    "counter1",
-							MType: models.Counter,
-							Delta: int64Ptr(5),
-						},
-						{
-							ID:    "counter2",
-							MType: models.Counter,
-							Delta: int64Ptr(10),
-						},
+						{ID: "gauge1", MType: models.Gauge, Value: floatPtr(123.45)},
+						{ID: "gauge2", MType: models.Gauge, Value: floatPtr(67.89)},
+						{ID: "counter1", MType: models.Counter, Delta: int64Ptr(5)},
+						{ID: "counter2", MType: models.Counter, Delta: int64Ptr(10)},
 					},
 					nil,
 				)
@@ -620,14 +500,13 @@ func TestMetricsHandler_GetAllMetrics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockService := new(MockService)
+			mockService := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockService)
 
 			handler := NewMetricsHandler(mockService)
 
 			gin.SetMode(gin.TestMode)
 
-			// Создаем router с мок-шаблоном
 			router := gin.New()
 			router.SetHTMLTemplate(template.Must(template.New("metrics.html").Parse(`
 <!DOCTYPE html>
@@ -653,7 +532,6 @@ func TestMetricsHandler_GetAllMetrics(t *testing.T) {
 </html>
 			`)))
 
-			// Используем Any() чтобы все методы доходили до handler'а
 			router.Any("/", handler.GetAllMetrics)
 
 			req := httptest.NewRequest(tt.method, "/", nil)

@@ -17,7 +17,7 @@ type ServerConfig struct {
 	StoreInterval   *int64 `yaml:"storeInterval"`
 	FileStoragePath string `yaml:"fileStoragePath"`
 	Restore         *bool  `yaml:"restore"`
-	DataBaseDSN     string `yaml:"databaseDSN"`
+	DatabaseDSN     string `yaml:"databaseDSN"`
 }
 
 type ClientConfig struct {

@@ -4,6 +4,7 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -24,11 +25,6 @@ func NewMetricsHandler(service service.MetricsService) MetricsHandler {
 	}
 }
 func (m *metricsHandler) Update(c *gin.Context) {
-	if c.Request.Method != http.MethodPost {
-		c.String(http.StatusMethodNotAllowed, methodNotAllowed)
-		return
-	}
-
 	ctx := c.Request.Context()
 
 	mType, mName, mValue, ok := m.parsePath(c)
@@ -95,11 +91,6 @@ func (m *metricsHandler) validateParam(c *gin.Context, mType, mName, mValue stri
 }
 
 func (m *metricsHandler) GetMetric(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.String(http.StatusMethodNotAllowed, methodNotAllowed)
-		return
-	}
-
 	ctx := c.Request.Context()
 
 	mType := c.Param("type")
@@ -127,16 +118,12 @@ func (m *metricsHandler) GetMetric(c *gin.Context) {
 }
 
 func (m *metricsHandler) GetAllMetrics(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.String(http.StatusMethodNotAllowed, methodNotAllowed)
-		return
-	}
-
 	ctx := c.Request.Context()
 
 	metrics, err := m.service.GetAllMetrics(ctx)
 	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
+		log.Printf("GetAllMetrics: %v", err)
+		c.String(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 		return
 	}
 

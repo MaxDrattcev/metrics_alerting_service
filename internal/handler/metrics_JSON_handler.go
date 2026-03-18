@@ -6,6 +6,7 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 	"github.com/gin-gonic/gin"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -21,11 +22,6 @@ func NewMetricsJSONHandler(service service.MetricsService) MetricsHandler {
 }
 
 func (m *metricsJSONHandler) Update(c *gin.Context) {
-	if c.Request.Method != http.MethodPost {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
-		return
-	}
-
 	ctx := c.Request.Context()
 
 	if c.GetHeader("Content-Type") != "application/json" {
@@ -49,13 +45,15 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 	}
 	if metric.MType == models.Gauge {
 		if err := m.service.UpdateGauge(ctx, metric.MType, metric.ID, metric.Value); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Printf("UpdateGauge: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
 			return
 		}
 	}
 	if metric.MType == models.Counter {
 		if err := m.service.UpdateCounter(ctx, metric.MType, metric.ID, metric.Delta); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Printf("UpdateCounter: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
 			return
 		}
 	}
@@ -87,11 +85,6 @@ func (m *metricsJSONHandler) validateRequest(c *gin.Context, metric models.Metri
 }
 
 func (m *metricsJSONHandler) GetMetric(c *gin.Context) {
-	if c.Request.Method != http.MethodPost {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
-		return
-	}
-
 	ctx := c.Request.Context()
 
 	if c.GetHeader("Content-Type") != "application/json" {
@@ -126,7 +119,8 @@ func (m *metricsJSONHandler) GetMetric(c *gin.Context) {
 	if metric.MType == models.Gauge {
 		f, err := strconv.ParseFloat(value, 64)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Printf("ParseFloat in GetMetric: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
 			return
 		}
 		metric.Value = &f
@@ -135,7 +129,8 @@ func (m *metricsJSONHandler) GetMetric(c *gin.Context) {
 	if metric.MType == models.Counter {
 		i, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Printf("ParseInt in GetMetric: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
 			return
 		}
 		metric.Delta = &i
@@ -147,27 +142,18 @@ func (m *metricsJSONHandler) GetMetric(c *gin.Context) {
 }
 
 func (m *metricsJSONHandler) GetAllMetrics(c *gin.Context) {
-	if c.Request.Method != http.MethodGet {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
-		return
-	}
-
 	ctx := c.Request.Context()
 
 	metrics, err := m.service.GetAllMetrics(ctx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("GetAllMetrics: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
 		return
 	}
 	c.JSON(http.StatusOK, metrics)
 }
 
 func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
-	if c.Request.Method != http.MethodPost {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"error": methodNotAllowed})
-		return
-	}
-
 	ctx := c.Request.Context()
 
 	if c.GetHeader("Content-Type") != "application/json" {
@@ -194,7 +180,7 @@ func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
 	}
 
 	if err := m.service.UpdateMetrics(ctx, metrics); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		log.Printf("UpdateMetrics: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
 	}
 }

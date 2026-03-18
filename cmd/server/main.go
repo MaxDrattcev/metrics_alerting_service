@@ -8,10 +8,8 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config/db"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 	"github.com/bytedance/gopkg/util/logger"
-	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"log"
 	"os"
 	"time"
@@ -34,7 +32,7 @@ func main() {
 		StoreInterval:   envVar.StoreInterval,
 		FileStoragePath: envVar.FileStoragePath,
 		Restore:         envVar.Restore,
-		DataBaseDSN:     envVar.DataBaseDSN,
+		DatabaseDSN:     envVar.DatabaseDSN,
 	}
 	if server.Address == "" {
 		server.Address = flags.Address
@@ -48,8 +46,8 @@ func main() {
 	if server.Restore == nil {
 		server.Restore = &flags.Restore
 	}
-	if server.DataBaseDSN == "" {
-		server.DataBaseDSN = flags.DataBaseDSN
+	if server.DatabaseDSN == "" {
+		server.DatabaseDSN = flags.DatabaseDSN
 	}
 
 	cfg := &config.Config{Server: server}
@@ -57,24 +55,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var pool *pgxpool.Pool
-	if cfg.Server.DataBaseDSN != "" {
-		var err error
-		pool, err = db.NewPool(ctx, cfg.Server.DataBaseDSN)
-		if err != nil {
-			log.Fatalf("Error connecting to database: %v", err)
-		}
+	pool, err := db.NewConDB(ctx, *cfg, "file://migrations")
+	if err != nil {
+		log.Fatalf("Error connecting to database: %v", err)
+	}
+	if pool != nil {
 		defer pool.Close()
-
-		m, err := migrate.New("file://migrations", cfg.Server.DataBaseDSN)
-		if err != nil {
-			log.Fatalf("migrate init: %v", err)
-		}
-		defer m.Close()
-
-		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-			log.Fatalf("migrate up: %v", err)
-		}
 	}
 	app := internal.NewApp(cfg, pool)
 

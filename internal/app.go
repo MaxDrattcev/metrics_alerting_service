@@ -21,7 +21,7 @@ type App struct {
 
 func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	var metricsRepo repository.MetricsStorage
-	if cfg.Server.DataBaseDSN != "" {
+	if cfg.Server.DatabaseDSN != "" {
 		metricsRepo = repository.NewPostgresStorage(pool)
 	} else {
 		metricsRepo = repository.NewMemStorage()

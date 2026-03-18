@@ -10,7 +10,7 @@ type ServerFlags struct {
 	StoreInterval   int64
 	FileStoragePath string
 	Restore         bool
-	DataBaseDSN     string
+	DatabaseDSN     string
 }
 
 func parseServerFlags() (*ServerFlags, error) {
@@ -33,6 +33,6 @@ func parseServerFlags() (*ServerFlags, error) {
 		StoreInterval:   int64(*storeInterval),
 		FileStoragePath: *fileStoragePath,
 		Restore:         *restore,
-		DataBaseDSN:     *dataBaseDSN,
+		DatabaseDSN:     *dataBaseDSN,
 	}, nil
 }

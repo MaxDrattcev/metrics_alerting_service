@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -25,11 +26,11 @@ func (p *PostgresStorage) UpdateGauge(ctx context.Context, metric models.Metrics
 	}
 	query := "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, NULL, $3) " +
 		"ON CONFLICT (id) DO UPDATE SET type = EXCLUDED.type, value = EXCLUDED.value, delta = NULL"
-	err := doWithDBRetries(ctx, func(ctx context.Context) error {
-		_, err := p.pool.Exec(ctx, query, metric.ID, metric.MType, *metric.Value)
+
+	err := WithTxRetry(ctx, p.pool, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, query, metric.ID, metric.MType, *metric.Value)
 		return err
 	})
-
 	if err != nil {
 		return fmt.Errorf("update gauge: %w", err)
 	}
@@ -42,8 +43,9 @@ func (p *PostgresStorage) UpdateCounter(ctx context.Context, metric models.Metri
 	}
 	query := "INSERT INTO metrics (id, type, delta, value) VALUES ($1, $2, $3, NULL)" +
 		"ON CONFLICT (id) DO UPDATE SET type = EXCLUDED.type, value = NULL, delta = COALESCE(metrics.delta, 0) + EXCLUDED.delta"
-	err := doWithDBRetries(ctx, func(ctx context.Context) error {
-		_, err := p.pool.Exec(ctx, query, metric.ID, metric.MType, *metric.Delta)
+
+	err := WithTxRetry(ctx, p.pool, func(tx pgx.Tx) error {
+		_, err := tx.Exec(ctx, query, metric.ID, metric.MType, *metric.Delta)
 		return err
 	})
 	if err != nil {
@@ -59,11 +61,10 @@ func (p *PostgresStorage) GetMetric(ctx context.Context, mType string, mName str
 	query := "SELECT * FROM metrics WHERE type = $1 AND id = $2"
 
 	var metric models.Metrics
-	err := doWithDBRetries(ctx, func(ctx context.Context) error {
-		row := p.pool.QueryRow(ctx, query, mType, mName)
+	err := WithTxRetry(ctx, p.pool, func(tx pgx.Tx) error {
+		row := tx.QueryRow(ctx, query, mType, mName)
 		return row.Scan(&metric.ID, &metric.MType, &metric.Delta, &metric.Value)
 	})
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.Metrics{}, fmt.Errorf("metric not found")
@@ -82,8 +83,8 @@ func (p *PostgresStorage) GetAllMetrics(ctx context.Context) ([]models.Metrics, 
 	query := "SELECT id, type, delta, value FROM metrics"
 
 	var out []models.Metrics
-	err := doWithDBRetries(ctx, func(ctx context.Context) error {
-		rows, err := p.pool.Query(ctx, query)
+	err := WithTxRetry(ctx, p.pool, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, query)
 		if err != nil {
 			return err
 		}
@@ -97,12 +98,8 @@ func (p *PostgresStorage) GetAllMetrics(ctx context.Context) ([]models.Metrics, 
 			}
 			out = append(out, m)
 		}
-		if err := rows.Err(); err != nil {
-			return err
-		}
-		return nil
+		return rows.Err()
 	})
-
 	if err != nil {
 		return []models.Metrics{}, fmt.Errorf("get metrics: %w", err)
 	}
@@ -117,20 +114,13 @@ func (p *PostgresStorage) UpdateMetrics(ctx context.Context, metrics []models.Me
 		"delta = CASE WHEN EXCLUDED.type = 'counter' " +
 		"THEN COALESCE(metrics.delta, 0) + COALESCE(EXCLUDED.delta, 0) ELSE EXCLUDED.delta END"
 
-	err := doWithDBRetries(ctx, func(ctx context.Context) error {
-		tx, err := p.pool.Begin(ctx)
-		if err != nil {
-			return err
-		}
-		defer tx.Rollback(ctx)
-
+	err := WithTxRetry(ctx, p.pool, func(tx pgx.Tx) error {
 		for _, metric := range metrics {
-			_, err := tx.Exec(ctx, query, metric.ID, metric.MType, metric.Delta, metric.Value)
-			if err != nil {
+			if _, err := tx.Exec(ctx, query, metric.ID, metric.MType, metric.Delta, metric.Value); err != nil {
 				return err
 			}
 		}
-		return tx.Commit(ctx)
+		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("update metrics: %w", err)
