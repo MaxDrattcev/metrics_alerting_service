@@ -41,7 +41,7 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 	}
 	defer c.Request.Body.Close()
 
-	if m.cfg.Server.Key != "" {
+	if m.cfg.Server.Key != "" && c.GetHeader("HashSHA256") != "" {
 		hash, err := m.computeHashSHA256(body)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -82,7 +82,7 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
 		return
 	}
-	if m.cfg.Server.Key != "" {
+	if m.cfg.Server.Key != "" && c.GetHeader("HashSHA256") != "" {
 		hashHeader, err := m.computeHashSHA256(respBytes)
 		if err != nil {
 			log.Printf("Hash header: %v", err)
@@ -200,7 +200,7 @@ func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
 		return
 	}
 	defer c.Request.Body.Close()
-	if m.cfg.Server.Key != "" {
+	if m.cfg.Server.Key != "" && c.GetHeader("HashSHA256") != "" {
 		hash, err := m.computeHashSHA256(body)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -236,7 +236,7 @@ func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
 		return
 	}
 
-	if m.cfg.Server.Key != "" {
+	if m.cfg.Server.Key != "" && c.GetHeader("HashSHA256") != "" {
 		hashHeader, err := m.computeHashSHA256(respBytes)
 		if err != nil {
 			log.Printf("Hash header: %v", err)
