@@ -92,7 +92,6 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 		c.Header("HashSHA256", hashHeader)
 	}
 	c.Data(http.StatusOK, "application/json; charset=utf-8", respBytes)
-	return
 }
 
 func (m *metricsJSONHandler) validateRequest(c *gin.Context, metric models.Metrics) bool {
@@ -173,7 +172,6 @@ func (m *metricsJSONHandler) GetMetric(c *gin.Context) {
 	}
 	metric.Hash = ""
 	c.JSON(http.StatusOK, metric)
-
 }
 
 func (m *metricsJSONHandler) GetAllMetrics(c *gin.Context) {
@@ -186,7 +184,6 @@ func (m *metricsJSONHandler) GetAllMetrics(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, metrics)
-	return
 }
 
 func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
@@ -250,7 +247,6 @@ func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
 	}
 
 	c.Data(http.StatusOK, "application/json; charset=utf-8", respBytes)
-	return
 }
 
 func (m *metricsJSONHandler) computeHashSHA256(bodyBytes []byte) (string, error) {
