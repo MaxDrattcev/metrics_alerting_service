@@ -1,7 +1,11 @@
 package handler
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 	"github.com/gin-gonic/gin"
@@ -13,11 +17,13 @@ import (
 
 type metricsJSONHandler struct {
 	service service.MetricsService
+	cfg     *config.Config
 }
 
-func NewMetricsJSONHandler(service service.MetricsService) MetricsHandler {
+func NewMetricsJSONHandler(service service.MetricsService, cfg *config.Config) MetricsHandler {
 	return &metricsJSONHandler{
 		service: service,
+		cfg:     cfg,
 	}
 }
 
@@ -34,6 +40,19 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 		return
 	}
 	defer c.Request.Body.Close()
+
+	if m.cfg.Server.Key != "" {
+		hash, err := m.computeHashSHA256(body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if hash != c.GetHeader("HashSHA256") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hash"})
+			return
+		}
+		c.Header("HashSHA256", c.GetHeader("HashSHA256"))
+	}
 
 	var metric models.Metrics
 	if err := json.Unmarshal(body, &metric); err != nil {
@@ -57,7 +76,23 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 			return
 		}
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "success"})
+	respBytes, err := json.Marshal(gin.H{})
+	if err != nil {
+		log.Printf("Failed marshal resp: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
+		return
+	}
+	if m.cfg.Server.Key != "" {
+		hashHeader, err := m.computeHashSHA256(respBytes)
+		if err != nil {
+			log.Printf("Hash header: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
+			return
+		}
+		c.Header("HashSHA256", hashHeader)
+	}
+	c.Data(http.StatusOK, "application/json; charset=utf-8", respBytes)
+	return
 }
 
 func (m *metricsJSONHandler) validateRequest(c *gin.Context, metric models.Metrics) bool {
@@ -151,6 +186,7 @@ func (m *metricsJSONHandler) GetAllMetrics(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, metrics)
+	return
 }
 
 func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
@@ -167,6 +203,18 @@ func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
 		return
 	}
 	defer c.Request.Body.Close()
+	if m.cfg.Server.Key != "" {
+		hash, err := m.computeHashSHA256(body)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if hash != c.GetHeader("HashSHA256") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hash"})
+			return
+		}
+		c.Header("HashSHA256", c.GetHeader("HashSHA256"))
+	}
 
 	var metrics []models.Metrics
 	if err := json.Unmarshal(body, &metrics); err != nil {
@@ -182,5 +230,34 @@ func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
 	if err := m.service.UpdateMetrics(ctx, metrics); err != nil {
 		log.Printf("UpdateMetrics: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
+		return
 	}
+	respBytes, err := json.Marshal(gin.H{})
+	if err != nil {
+		log.Printf("Failed marshal resp: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
+		return
+	}
+
+	if m.cfg.Server.Key != "" {
+		hashHeader, err := m.computeHashSHA256(respBytes)
+		if err != nil {
+			log.Printf("Hash header: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
+			return
+		}
+		c.Header("HashSHA256", hashHeader)
+	}
+
+	c.Data(http.StatusOK, "application/json; charset=utf-8", respBytes)
+	return
+}
+
+func (m *metricsJSONHandler) computeHashSHA256(bodyBytes []byte) (string, error) {
+	mac := hmac.New(sha256.New, []byte(m.cfg.Server.Key))
+	_, err := mac.Write(bodyBytes)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(mac.Sum(nil)), nil
 }

@@ -9,6 +9,7 @@ type AgentFlags struct {
 	Address        string
 	ReportInterval int64
 	PollInterval   int64
+	Key            string
 }
 
 func parseAgentFlags() (*AgentFlags, error) {
@@ -16,6 +17,7 @@ func parseAgentFlags() (*AgentFlags, error) {
 		address        = flag.String("a", "localhost:8080", "адрес и порт запуска HTTP-сервера")
 		reportInterval = flag.Int("r", 10, "частота отправки метрик на сервер (в секундах)")
 		pollInterval   = flag.Int("p", 2, "частота опроса метрик из пакета runtime (в секундах)")
+		key            = flag.String("k", "", "Ключ")
 	)
 
 	flag.Parse()
@@ -28,5 +30,6 @@ func parseAgentFlags() (*AgentFlags, error) {
 		Address:        *address,
 		ReportInterval: int64(*reportInterval),
 		PollInterval:   int64(*pollInterval),
+		Key:            *key,
 	}, nil
 }

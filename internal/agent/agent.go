@@ -59,15 +59,15 @@ func (a *Agent) startReporting(ctx context.Context) {
 	}
 }
 
-func (a *Agent) sendAllMetrics() {
+func (a *Agent) sendAllMetrics(ctx context.Context) {
 	gauges := a.collector.GetAllGauges()
 	for name, value := range gauges {
-		if err := a.sender.SendGaugeJSON(name, value); err != nil {
+		if err := a.sender.SendGaugeJSON(ctx, name, value); err != nil {
 			log.Printf("Failed to send gauge %s: %v", name, err)
 		}
 	}
 	pollCount := a.collector.GetPollCount()
-	if err := a.sender.SendCounterJSON("PollCount", pollCount); err != nil {
+	if err := a.sender.SendCounterJSON(ctx, "PollCount", pollCount); err != nil {
 		log.Printf("Failed to send counter PollCounter: %v", err)
 	}
 }

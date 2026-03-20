@@ -40,7 +40,7 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	go metricsScheduler.RunWriteMetricsFile(context.Background())
 
 	metricsHandler := handler.NewMetricsHandler(metricsService)
-	metricsJSONHandler := handler.NewMetricsJSONHandler(metricsService)
+	metricsJSONHandler := handler.NewMetricsJSONHandler(metricsService, cfg)
 
 	router := SetupRouter(metricsHandler, metricsJSONHandler, pool)
 
