@@ -3,13 +3,12 @@ package agent
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
-	"github.com/go-resty/resty/v2"
 	"net/http"
-	"time"
 )
 
 const (
@@ -20,15 +19,12 @@ const (
 
 type MetricsSender struct {
 	cfg    *config.Config
-	client *resty.Client
+	client *RetryableClient
 }
 
 func NewMetricsSender(cfg *config.Config) *MetricsSender {
-	client := resty.New()
-	client.SetTimeout(5 * time.Second)
-
 	return &MetricsSender{
-		client: client,
+		client: NewRetryableClient(),
 		cfg:    cfg,
 	}
 }
@@ -107,6 +103,39 @@ func (s *MetricsSender) sendMetricJSONGzip(metric models.Metrics) error {
 		SetHeader("Accept-Encoding", "gzip").
 		SetBody(buf.Bytes()).
 		Post(url)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
+	}
+	return nil
+}
+
+func (s *MetricsSender) SendAllMetricsBuffer(ctx context.Context, metrics []models.Metrics) error {
+	payload, err := json.Marshal(&metrics)
+	if err != nil {
+		return fmt.Errorf("marshal metric: %w", err)
+	}
+
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	if _, err := gz.Write(payload); err != nil {
+		gz.Close()
+		return fmt.Errorf("gzip write: %w", err)
+	}
+	if err := gz.Close(); err != nil {
+		return fmt.Errorf("gzip close: %w", err)
+	}
+
+	url := fmt.Sprintf("http://%s/updates", s.cfg.Client.Address)
+	headers := map[string]string{
+		contentType:        jsonType,
+		"Content-Encoding": "gzip",
+		"Accept-Encoding":  "gzip",
+	}
+
+	resp, err := s.client.PostWithRetry(ctx, url, headers, buf.Bytes())
 	if err != nil {
 		return err
 	}

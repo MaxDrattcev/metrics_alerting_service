@@ -67,8 +67,8 @@ func TestMemStorage_UpdateGauge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage := NewMetricsStorage()
-			err := storage.UpdateGauge(tt.metric)
+			storage := NewMemStorage()
+			err := storage.UpdateGauge(t.Context(), tt.metric)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -122,8 +122,8 @@ func TestMemStorage_UpdateCounter(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			storage := NewMetricsStorage()
-			err := storage.UpdateCounter(test.metric)
+			storage := NewMemStorage()
+			err := storage.UpdateCounter(t.Context(), test.metric)
 			if test.wantErr {
 				require.Error(t, err)
 			} else {
@@ -220,10 +220,10 @@ func TestMemStorage_UpdateCounter_Summation(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			storage := NewMetricsStorage()
+			storage := NewMemStorage()
 
 			for _, metric := range test.updates {
-				err := storage.UpdateCounter(metric)
+				err := storage.UpdateCounter(t.Context(), metric)
 				if test.wantErr {
 					require.Error(t, err)
 				} else {
@@ -248,7 +248,7 @@ func TestMemStorage_GetMetric(t *testing.T) {
 		{
 			name: "get existing gauge metric",
 			setup: func(s *MemStorage) {
-				s.UpdateGauge(models.Metrics{
+				s.UpdateGauge(t.Context(), models.Metrics{
 					ID:    "testGauge",
 					MType: models.Gauge,
 					Value: floatPtr(123.45),
@@ -262,7 +262,7 @@ func TestMemStorage_GetMetric(t *testing.T) {
 		{
 			name: "get existing counter metric",
 			setup: func(s *MemStorage) {
-				s.UpdateCounter(models.Metrics{
+				s.UpdateCounter(t.Context(), models.Metrics{
 					ID:    "testCounter",
 					MType: models.Counter,
 					Delta: int64Ptr(5),
@@ -284,7 +284,7 @@ func TestMemStorage_GetMetric(t *testing.T) {
 		{
 			name: "get gauge with zero value",
 			setup: func(s *MemStorage) {
-				s.UpdateGauge(models.Metrics{
+				s.UpdateGauge(t.Context(), models.Metrics{
 					ID:    "zeroGauge",
 					MType: models.Gauge,
 					Value: floatPtr(0.0),
@@ -298,7 +298,7 @@ func TestMemStorage_GetMetric(t *testing.T) {
 		{
 			name: "get counter with zero value",
 			setup: func(s *MemStorage) {
-				s.UpdateCounter(models.Metrics{
+				s.UpdateCounter(t.Context(), models.Metrics{
 					ID:    "zeroCounter",
 					MType: models.Counter,
 					Delta: int64Ptr(0),
@@ -312,12 +312,12 @@ func TestMemStorage_GetMetric(t *testing.T) {
 		{
 			name: "get counter with accumulated value",
 			setup: func(s *MemStorage) {
-				s.UpdateCounter(models.Metrics{
+				s.UpdateCounter(t.Context(), models.Metrics{
 					ID:    "accumCounter",
 					MType: models.Counter,
 					Delta: int64Ptr(5),
 				})
-				s.UpdateCounter(models.Metrics{
+				s.UpdateCounter(t.Context(), models.Metrics{
 					ID:    "accumCounter",
 					MType: models.Counter,
 					Delta: int64Ptr(3),
@@ -331,7 +331,7 @@ func TestMemStorage_GetMetric(t *testing.T) {
 		{
 			name: "wrong type for existing name",
 			setup: func(s *MemStorage) {
-				s.UpdateGauge(models.Metrics{
+				s.UpdateGauge(t.Context(), models.Metrics{
 					ID:    "testMetric",
 					MType: models.Gauge,
 					Value: floatPtr(123.45),
@@ -346,10 +346,10 @@ func TestMemStorage_GetMetric(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage := NewMetricsStorage().(*MemStorage)
+			storage := NewMemStorage().(*MemStorage)
 			tt.setup(storage)
 
-			metric, err := storage.GetMetric(tt.mType, tt.mName)
+			metric, err := storage.GetMetric(t.Context(), tt.mType, tt.mName)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -389,7 +389,7 @@ func TestMemStorage_GetAllMetrics(t *testing.T) {
 		{
 			name: "single gauge metric",
 			setup: func(s *MemStorage) {
-				s.UpdateGauge(models.Metrics{
+				s.UpdateGauge(t.Context(), models.Metrics{
 					ID:    "gauge1",
 					MType: models.Gauge,
 					Value: floatPtr(123.45),
@@ -401,7 +401,7 @@ func TestMemStorage_GetAllMetrics(t *testing.T) {
 		{
 			name: "single counter metric",
 			setup: func(s *MemStorage) {
-				s.UpdateCounter(models.Metrics{
+				s.UpdateCounter(t.Context(), models.Metrics{
 					ID:    "counter1",
 					MType: models.Counter,
 					Delta: int64Ptr(5),
@@ -413,17 +413,17 @@ func TestMemStorage_GetAllMetrics(t *testing.T) {
 		{
 			name: "multiple metrics",
 			setup: func(s *MemStorage) {
-				s.UpdateGauge(models.Metrics{
+				s.UpdateGauge(t.Context(), models.Metrics{
 					ID:    "gauge1",
 					MType: models.Gauge,
 					Value: floatPtr(123.45),
 				})
-				s.UpdateGauge(models.Metrics{
+				s.UpdateGauge(t.Context(), models.Metrics{
 					ID:    "gauge2",
 					MType: models.Gauge,
 					Value: floatPtr(67.89),
 				})
-				s.UpdateCounter(models.Metrics{
+				s.UpdateCounter(t.Context(), models.Metrics{
 					ID:    "counter1",
 					MType: models.Counter,
 					Delta: int64Ptr(5),
@@ -435,12 +435,12 @@ func TestMemStorage_GetAllMetrics(t *testing.T) {
 		{
 			name: "multiple metrics with same name different types",
 			setup: func(s *MemStorage) {
-				s.UpdateGauge(models.Metrics{
+				s.UpdateGauge(t.Context(), models.Metrics{
 					ID:    "testMetric",
 					MType: models.Gauge,
 					Value: floatPtr(123.45),
 				})
-				s.UpdateCounter(models.Metrics{
+				s.UpdateCounter(t.Context(), models.Metrics{
 					ID:    "testMetric",
 					MType: models.Counter,
 					Delta: int64Ptr(5),
@@ -452,12 +452,12 @@ func TestMemStorage_GetAllMetrics(t *testing.T) {
 		{
 			name: "overwrite gauge metric",
 			setup: func(s *MemStorage) {
-				s.UpdateGauge(models.Metrics{
+				s.UpdateGauge(t.Context(), models.Metrics{
 					ID:    "gauge1",
 					MType: models.Gauge,
 					Value: floatPtr(100.0),
 				})
-				s.UpdateGauge(models.Metrics{
+				s.UpdateGauge(t.Context(), models.Metrics{
 					ID:    "gauge1",
 					MType: models.Gauge,
 					Value: floatPtr(200.0),
@@ -470,10 +470,10 @@ func TestMemStorage_GetAllMetrics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage := NewMetricsStorage().(*MemStorage)
+			storage := NewMemStorage().(*MemStorage)
 			tt.setup(storage)
 
-			metrics, err := storage.GetAllMetrics()
+			metrics, err := storage.GetAllMetrics(t.Context())
 
 			if tt.wantErr {
 				require.Error(t, err)

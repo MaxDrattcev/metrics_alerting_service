@@ -22,7 +22,7 @@ func TestNewApp(t *testing.T) {
 		},
 	}
 
-	app := NewApp(cfg)
+	app := NewApp(cfg, nil)
 
 	require.NotNil(t, app)
 	assert.NotNil(t, app.handler)
@@ -33,7 +33,7 @@ func TestNewApp(t *testing.T) {
 func TestSetupRouter(t *testing.T) {
 	mockHandler := &mockMetricsHandler{}
 
-	router := SetupRouter(mockHandler, mockHandler)
+	router := SetupRouter(mockHandler, mockHandler, nil)
 
 	require.NotNil(t, router)
 
@@ -61,4 +61,9 @@ func (m *mockMetricsHandler) GetMetric(c *gin.Context) {
 
 func (m *mockMetricsHandler) GetAllMetrics(c *gin.Context) {
 	c.String(http.StatusOK, "metrics")
+}
+
+func (m *mockMetricsHandler) UpdateMetrics(c *gin.Context) {
+	m.called = true
+	c.String(http.StatusOK, "")
 }

@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config/db"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 	"github.com/bytedance/gopkg/util/logger"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -27,6 +32,7 @@ func main() {
 		StoreInterval:   envVar.StoreInterval,
 		FileStoragePath: envVar.FileStoragePath,
 		Restore:         envVar.Restore,
+		DatabaseDSN:     envVar.DatabaseDSN,
 	}
 	if server.Address == "" {
 		server.Address = flags.Address
@@ -40,10 +46,23 @@ func main() {
 	if server.Restore == nil {
 		server.Restore = &flags.Restore
 	}
+	if server.DatabaseDSN == "" {
+		server.DatabaseDSN = flags.DatabaseDSN
+	}
 
 	cfg := &config.Config{Server: server}
 
-	app := internal.NewApp(cfg)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	pool, err := db.NewConDB(ctx, *cfg, "file://migrations")
+	if err != nil {
+		log.Fatalf("Error connecting to database: %v", err)
+	}
+	if pool != nil {
+		defer pool.Close()
+	}
+	app := internal.NewApp(cfg, pool)
 
 	if err := app.Run(); err != nil {
 		log.Fatalf("Failed to run app: %v", err)

@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 	"log"
@@ -8,24 +9,33 @@ import (
 )
 
 type MetricsScheduler struct {
-	cfg           *config.Config
-	metricService service.MetricsService
+	cfg         *config.Config
+	fileService service.FileService
 }
 
-func NewMetricsScheduler(cfg *config.Config, metricService service.MetricsService) *MetricsScheduler {
+func NewMetricsScheduler(cfg *config.Config, fileService service.FileService) *MetricsScheduler {
 	return &MetricsScheduler{
-		cfg:           cfg,
-		metricService: metricService}
+		cfg:         cfg,
+		fileService: fileService}
 }
 
-func (ms *MetricsScheduler) RunWriteMetricsFile() {
+func (ms *MetricsScheduler) RunWriteMetricsFile(ctx context.Context) {
 	if *ms.cfg.Server.StoreInterval == 0 {
 		return
 	}
+	ticker := time.NewTicker(ms.cfg.Server.GetStoreInterval())
+	defer ticker.Stop()
 	for {
-		time.Sleep(ms.cfg.Server.GetStoreInterval())
-		if err := ms.metricService.WriteMetricsFile(); err != nil {
-			log.Printf("failed to write metrics file: %v", err)
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			writeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			err := ms.fileService.WriteMetricsFile(writeCtx)
+			cancel()
+			if err != nil {
+				log.Printf("failed to write metrics file: %v", err)
+			}
 		}
 	}
 }

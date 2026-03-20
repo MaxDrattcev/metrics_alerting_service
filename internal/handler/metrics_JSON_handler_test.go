@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/mocks"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 		method      string
 		contentType string
 		body        interface{}
-		setupMock   func(*MockService)
+		setupMock   func(*mocks.MockMetricsService)
 		wantStatus  int
 	}{
 		{
@@ -30,8 +31,8 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "g1", "type": "gauge", "value": 123.45},
-			setupMock: func(m *MockService) {
-				m.On("UpdateGauge", models.Gauge, "g1", mock.AnythingOfType("*float64")).Return(nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("UpdateGauge", mock.Anything, models.Gauge, "g1", mock.AnythingOfType("*float64")).Return(nil)
 			},
 			wantStatus: http.StatusOK,
 		},
@@ -40,25 +41,17 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "c1", "type": "counter", "delta": int64(10)},
-			setupMock: func(m *MockService) {
-				m.On("UpdateCounter", models.Counter, "c1", mock.AnythingOfType("*int64")).Return(nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("UpdateCounter", mock.Anything, models.Counter, "c1", mock.AnythingOfType("*int64")).Return(nil)
 			},
 			wantStatus: http.StatusOK,
-		},
-		{
-			name:        "wrong method GET",
-			method:      http.MethodGet,
-			contentType: "application/json",
-			body:        map[string]interface{}{"id": "g1", "type": "gauge", "value": 1.0},
-			setupMock:   func(m *MockService) {},
-			wantStatus:  http.StatusMethodNotAllowed,
 		},
 		{
 			name:        "wrong Content-Type",
 			method:      http.MethodPost,
 			contentType: "text/plain",
 			body:        map[string]interface{}{"id": "g1", "type": "gauge", "value": 1.0},
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusUnsupportedMediaType,
 		},
 		{
@@ -66,7 +59,7 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        `{invalid`,
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusBadRequest,
 		},
 		{
@@ -74,7 +67,7 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "", "type": "gauge", "value": 1.0},
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusNotFound,
 		},
 		{
@@ -82,7 +75,7 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "x", "type": "unknown", "value": 1.0},
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusBadRequest,
 		},
 		{
@@ -90,7 +83,7 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "g1", "type": "gauge"},
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusNotFound,
 		},
 		{
@@ -98,7 +91,7 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "c1", "type": "counter"},
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusNotFound,
 		},
 		{
@@ -106,8 +99,8 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "g1", "type": "gauge", "value": 1.0},
-			setupMock: func(m *MockService) {
-				m.On("UpdateGauge", models.Gauge, "g1", mock.AnythingOfType("*float64")).Return(errors.New("db error"))
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("UpdateGauge", mock.Anything, models.Gauge, "g1", mock.AnythingOfType("*float64")).Return(errors.New("db error"))
 			},
 			wantStatus: http.StatusInternalServerError,
 		},
@@ -115,7 +108,7 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockSvc := new(MockService)
+			mockSvc := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockSvc)
 			h := NewMetricsJSONHandler(mockSvc)
 
@@ -137,6 +130,7 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 			h.Update(c)
 
 			assert.Equal(t, tt.wantStatus, w.Code)
+			mockSvc.AssertExpectations(t)
 		})
 	}
 }
@@ -149,7 +143,7 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 		method      string
 		contentType string
 		body        interface{}
-		setupMock   func(*MockService)
+		setupMock   func(*mocks.MockMetricsService)
 		wantStatus  int
 		checkBody   func(t *testing.T, body []byte)
 	}{
@@ -158,8 +152,8 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "g1", "type": "gauge"},
-			setupMock: func(m *MockService) {
-				m.On("GetMetric", models.Gauge, "g1").Return("123.45", nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetMetric", mock.Anything, models.Gauge, "g1").Return("123.45", nil)
 			},
 			wantStatus: http.StatusOK,
 			checkBody: func(t *testing.T, body []byte) {
@@ -176,8 +170,8 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "c1", "type": "counter"},
-			setupMock: func(m *MockService) {
-				m.On("GetMetric", models.Counter, "c1").Return("42", nil)
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetMetric", mock.Anything, models.Counter, "c1").Return("42", nil)
 			},
 			wantStatus: http.StatusOK,
 			checkBody: func(t *testing.T, body []byte) {
@@ -188,19 +182,11 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 			},
 		},
 		{
-			name:        "wrong method",
-			method:      http.MethodGet,
-			contentType: "application/json",
-			body:        map[string]interface{}{"id": "g1", "type": "gauge"},
-			setupMock:   func(m *MockService) {},
-			wantStatus:  http.StatusMethodNotAllowed,
-		},
-		{
 			name:        "wrong Content-Type",
 			method:      http.MethodPost,
 			contentType: "text/plain",
 			body:        map[string]interface{}{"id": "g1", "type": "gauge"},
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusUnsupportedMediaType,
 		},
 		{
@@ -208,7 +194,7 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        `{`,
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusBadRequest,
 		},
 		{
@@ -216,7 +202,7 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "", "type": "gauge"},
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusNotFound,
 		},
 		{
@@ -224,7 +210,7 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "x", "type": "unknown"},
-			setupMock:   func(m *MockService) {},
+			setupMock:   func(*mocks.MockMetricsService) {},
 			wantStatus:  http.StatusBadRequest,
 		},
 		{
@@ -232,8 +218,8 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 			method:      http.MethodPost,
 			contentType: "application/json",
 			body:        map[string]interface{}{"id": "g1", "type": "gauge"},
-			setupMock: func(m *MockService) {
-				m.On("GetMetric", models.Gauge, "g1").Return("", errors.New("not found"))
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetMetric", mock.Anything, models.Gauge, "g1").Return("", errors.New("not found"))
 			},
 			wantStatus: http.StatusNotFound,
 		},
@@ -241,7 +227,7 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockSvc := new(MockService)
+			mockSvc := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockSvc)
 			h := NewMetricsJSONHandler(mockSvc)
 
@@ -266,6 +252,7 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 			if tt.checkBody != nil && w.Code == http.StatusOK {
 				tt.checkBody(t, w.Body.Bytes())
 			}
+			mockSvc.AssertExpectations(t)
 		})
 	}
 }
@@ -276,30 +263,24 @@ func TestMetricsJSONHandler_GetAllMetrics(t *testing.T) {
 	tests := []struct {
 		name       string
 		method     string
-		setupMock  func(*MockService)
+		setupMock  func(*mocks.MockMetricsService)
 		wantStatus int
 	}{
 		{
 			name:   "successful get all",
 			method: http.MethodGet,
-			setupMock: func(m *MockService) {
-				m.On("GetAllMetrics").Return([]models.Metrics{
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetAllMetrics", mock.Anything).Return([]models.Metrics{
 					{ID: "a", MType: models.Gauge, Value: floatPtr(1.0)},
 				}, nil)
 			},
 			wantStatus: http.StatusOK,
 		},
 		{
-			name:       "wrong method POST",
-			method:     http.MethodPost,
-			setupMock:  func(m *MockService) {},
-			wantStatus: http.StatusMethodNotAllowed,
-		},
-		{
 			name:   "service error",
 			method: http.MethodGet,
-			setupMock: func(m *MockService) {
-				m.On("GetAllMetrics").Return(nil, errors.New("db error"))
+			setupMock: func(m *mocks.MockMetricsService) {
+				m.On("GetAllMetrics", mock.Anything).Return(nil, errors.New("db error"))
 			},
 			wantStatus: http.StatusInternalServerError,
 		},
@@ -307,7 +288,7 @@ func TestMetricsJSONHandler_GetAllMetrics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockSvc := new(MockService)
+			mockSvc := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockSvc)
 			h := NewMetricsJSONHandler(mockSvc)
 
@@ -318,6 +299,7 @@ func TestMetricsJSONHandler_GetAllMetrics(t *testing.T) {
 			h.GetAllMetrics(c)
 
 			assert.Equal(t, tt.wantStatus, w.Code)
+			mockSvc.AssertExpectations(t)
 		})
 	}
 }

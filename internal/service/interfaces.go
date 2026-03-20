@@ -1,17 +1,24 @@
 package service
 
-import "github.com/MaxDrattcev/metrics_alerting_service/internal/models"
+import (
+	"context"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
+)
 
 type MetricsService interface {
-	UpdateGauge(string, string, *float64) error
+	UpdateGauge(context.Context, string, string, *float64) error
 
-	UpdateCounter(string, string, *int64) error
+	UpdateCounter(context.Context, string, string, *int64) error
 
-	GetMetric(string, string) (string, error)
+	GetMetric(context.Context, string, string) (string, error)
 
-	GetAllMetrics() ([]models.Metrics, error)
+	GetAllMetrics(context.Context) ([]models.Metrics, error)
 
-	WriteMetricsFile() error
+	UpdateMetrics(ctx context.Context, metrics []models.Metrics) error
+}
 
-	LoadMeticsFromFile() error
+type FileService interface {
+	WriteMetricsFile(ctx context.Context) error
+
+	LoadMeticsFromFile(ctx context.Context) error
 }
