@@ -14,6 +14,7 @@ type EnvVar struct {
 	Restore         *bool  `env:"RESTORE"`
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 	Key             string `env:"KEY"`
+	RateLimit       int    `env:"RATE_LIMIT"`
 }
 
 func LoadEnvVar() (EnvVar, error) {

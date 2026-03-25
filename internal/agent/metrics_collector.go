@@ -1,15 +1,20 @@
 package agent
 
 import (
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+	"log"
 	"math/rand"
 	"runtime"
 	"sync"
 )
 
 type MetricsCollector struct {
-	metrics   map[string]float64
-	pollCount int64
-	mu        sync.RWMutex
+	metrics      map[string]float64
+	pollCount    int64
+	mu           sync.RWMutex
+	prevCPUTimes cpu.TimesStat
+	cpuReady     bool
 }
 
 func NewMetricsCollector() *MetricsCollector {
@@ -25,6 +30,8 @@ func (c *MetricsCollector) Collect() {
 	c.pollCount++
 
 	c.collectRuntimeMetrics()
+
+	c.collectGopsutilMetrics()
 
 	c.collectRandomMetrics()
 
@@ -63,6 +70,30 @@ func (c *MetricsCollector) collectRuntimeMetrics() {
 	c.metrics["TotalAlloc"] = float64(m.TotalAlloc)
 }
 
+func (c *MetricsCollector) collectGopsutilMetrics() {
+	vm, err := mem.VirtualMemory()
+	if err != nil {
+		log.Printf("Error getting memory info: %v", err)
+		return
+	}
+	c.metrics["TotalMemory"] = float64(vm.Total)
+	c.metrics["FreeMemory"] = float64(vm.Free)
+
+	times, err := cpu.Times(false)
+	if err != nil || len(times) == 0 {
+		log.Printf("Error getting cpu times: %v", err)
+		return
+	}
+	cur := times[0]
+	if c.cpuReady {
+		c.metrics["CPUutilization1"] = c.cpuUtilizationDelta(c.prevCPUTimes, cur)
+	} else {
+		c.metrics["CPUutilization1"] = 0
+	}
+	c.prevCPUTimes = cur
+	c.cpuReady = true
+}
+
 func (c *MetricsCollector) collectRandomMetrics() {
 	c.metrics["RandomValue"] = rand.Float64() * 1000.0
 }
@@ -82,4 +113,18 @@ func (c *MetricsCollector) GetPollCount() int64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.pollCount
+}
+
+func (c *MetricsCollector) cpuUtilizationDelta(prev, cur cpu.TimesStat) float64 {
+	prevIdle := prev.Idle + prev.Iowait
+	curIdle := cur.Idle + cur.Iowait
+	prevTotal := prev.User + prev.System + prev.Nice + prev.Idle + prev.Iowait +
+		prev.Irq + prev.Softirq + prev.Steal
+	curTotal := cur.User + cur.System + cur.Nice + cur.Idle + cur.Iowait +
+		cur.Irq + cur.Softirq + cur.Steal
+	dTotal := curTotal - prevTotal
+	if dTotal <= 0 {
+		return 0
+	}
+	return (dTotal - (curIdle - prevIdle)) / dTotal
 }

@@ -26,6 +26,7 @@ type ClientConfig struct {
 	PollInterval   int64  `yaml:"pollInterval"`
 	ReportInterval int64  `yaml:"reportInterval"`
 	Key            string `yaml:"key"`
+	RateLimit      int    `yaml:"rateLimit"`
 }
 
 func (s *ServerConfig) GetStoreInterval() time.Duration {
