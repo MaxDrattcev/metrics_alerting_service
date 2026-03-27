@@ -1,11 +1,9 @@
 package handler
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/hasher"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 	"github.com/gin-gonic/gin"
@@ -42,7 +40,7 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 	defer c.Request.Body.Close()
 
 	if m.cfg.Server.Key != "" && c.GetHeader("HashSHA256") != "" {
-		hash, err := m.computeHashSHA256(body)
+		hash, err := hasher.ComputeHashSHA256(body, m.cfg.Server.Key)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -51,7 +49,6 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hash"})
 			return
 		}
-		c.Header("HashSHA256", c.GetHeader("HashSHA256"))
 	}
 
 	var metric models.Metrics
@@ -76,22 +73,8 @@ func (m *metricsJSONHandler) Update(c *gin.Context) {
 			return
 		}
 	}
-	respBytes, err := json.Marshal(gin.H{})
-	if err != nil {
-		log.Printf("Failed marshal resp: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
-		return
-	}
-	if m.cfg.Server.Key != "" && c.GetHeader("HashSHA256") != "" {
-		hashHeader, err := m.computeHashSHA256(respBytes)
-		if err != nil {
-			log.Printf("Hash header: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
-			return
-		}
-		c.Header("HashSHA256", hashHeader)
-	}
-	c.Data(http.StatusOK, "application/json; charset=utf-8", respBytes)
+
+	c.Status(http.StatusOK)
 }
 
 func (m *metricsJSONHandler) validateRequest(c *gin.Context, metric models.Metrics) bool {
@@ -201,7 +184,7 @@ func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
 	}
 	defer c.Request.Body.Close()
 	if m.cfg.Server.Key != "" && c.GetHeader("HashSHA256") != "" {
-		hash, err := m.computeHashSHA256(body)
+		hash, err := hasher.ComputeHashSHA256(body, m.cfg.Server.Key)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -210,7 +193,6 @@ func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid hash"})
 			return
 		}
-		c.Header("HashSHA256", c.GetHeader("HashSHA256"))
 	}
 
 	var metrics []models.Metrics
@@ -229,31 +211,5 @@ func (m *metricsJSONHandler) UpdateMetrics(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
 		return
 	}
-	respBytes, err := json.Marshal(gin.H{})
-	if err != nil {
-		log.Printf("Failed marshal resp: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
-		return
-	}
-
-	if m.cfg.Server.Key != "" && c.GetHeader("HashSHA256") != "" {
-		hashHeader, err := m.computeHashSHA256(respBytes)
-		if err != nil {
-			log.Printf("Hash header: %v", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": http.StatusText(http.StatusInternalServerError)})
-			return
-		}
-		c.Header("HashSHA256", hashHeader)
-	}
-
-	c.Data(http.StatusOK, "application/json; charset=utf-8", respBytes)
-}
-
-func (m *metricsJSONHandler) computeHashSHA256(bodyBytes []byte) (string, error) {
-	mac := hmac.New(sha256.New, []byte(m.cfg.Server.Key))
-	_, err := mac.Write(bodyBytes)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(mac.Sum(nil)), nil
+	c.Status(http.StatusOK)
 }

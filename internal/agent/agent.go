@@ -57,17 +57,10 @@ func (a *Agent) startReporting(ctx context.Context) {
 			return
 		case <-ticker.C:
 			snapshot := a.buildSnapshot()
-			rateLimit := a.cfg.Client.RateLimit
-			if rateLimit == 0 {
-				rateLimit = 1
-			}
-
-			for i := 0; i < rateLimit; i++ {
-				select {
-				case <-ctx.Done():
-					return
-				case a.jobs <- snapshot:
-				}
+			select {
+			case <-ctx.Done():
+				return
+			case a.jobs <- snapshot:
 			}
 		}
 	}
@@ -106,7 +99,7 @@ func (a *Agent) startWorkers(ctx context.Context, poolSize int) {
 	}
 	for i := 0; i < poolSize; i++ {
 		a.wg.Add(1)
-		go func(WorkerID int) {
+		go func(workerID int) {
 			defer a.wg.Done()
 			for {
 				select {
