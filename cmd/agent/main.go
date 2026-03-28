@@ -26,6 +26,8 @@ func main() {
 		Address:        envVar.Address,
 		ReportInterval: envVar.ReportInterval,
 		PollInterval:   envVar.PollInterval,
+		Key:            envVar.Key,
+		RateLimit:      envVar.RateLimit,
 	}
 	if client.Address == "" {
 		client.Address = flags.Address
@@ -36,7 +38,12 @@ func main() {
 	if client.PollInterval == 0 {
 		client.PollInterval = flags.PollInterval
 	}
-
+	if client.Key == "" {
+		client.Key = flags.Key
+	}
+	if client.RateLimit == 0 {
+		client.RateLimit = flags.RateLimit
+	}
 	cfg := &config.Config{Client: client}
 
 	ctx, cancel := context.WithCancel(context.Background())

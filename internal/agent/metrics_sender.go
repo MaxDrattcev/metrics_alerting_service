@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/hasher"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"net/http"
 )
@@ -46,13 +47,13 @@ func (s *MetricsSender) SendGauge(name string, value float64) error {
 	return nil
 }
 
-func (s *MetricsSender) SendGaugeJSON(name string, value float64) error {
+func (s *MetricsSender) SendGaugeJSON(ctx context.Context, name string, value float64) error {
 	metric := models.Metrics{
 		ID:    name,
 		MType: models.Gauge,
 		Value: &value,
 	}
-	return s.sendMetricJSONGzip(metric)
+	return s.sendMetricJSONGzip(ctx, metric)
 }
 
 func (s *MetricsSender) SendCounter(name string, value int64) error {
@@ -71,38 +72,40 @@ func (s *MetricsSender) SendCounter(name string, value int64) error {
 	return nil
 }
 
-func (s *MetricsSender) SendCounterJSON(name string, value int64) error {
+func (s *MetricsSender) SendCounterJSON(ctx context.Context, name string, value int64) error {
 	metric := models.Metrics{
 		ID:    name,
 		MType: models.Counter,
 		Delta: &value,
 	}
-	return s.sendMetricJSONGzip(metric)
+	return s.sendMetricJSONGzip(ctx, metric)
 }
 
-func (s *MetricsSender) sendMetricJSONGzip(metric models.Metrics) error {
+func (s *MetricsSender) sendMetricJSONGzip(ctx context.Context, metric models.Metrics) error {
 	payload, err := json.Marshal(&metric)
 	if err != nil {
 		return fmt.Errorf("marshal metric: %w", err)
 	}
-
-	var buf bytes.Buffer
-	gz := gzip.NewWriter(&buf)
-	if _, err := gz.Write(payload); err != nil {
-		gz.Close()
-		return fmt.Errorf("gzip write: %w", err)
+	buf, err := s.compressGzip(payload)
+	if err != nil {
+		return err
 	}
-	if err := gz.Close(); err != nil {
-		return fmt.Errorf("gzip close: %w", err)
-	}
-
 	url := fmt.Sprintf("http://%s/update", s.cfg.Client.Address)
-	resp, err := s.client.R().
-		SetHeader(contentType, jsonType).
-		SetHeader("Content-Encoding", "gzip").
-		SetHeader("Accept-Encoding", "gzip").
-		SetBody(buf.Bytes()).
-		Post(url)
+	headers := map[string]string{
+		contentType:        jsonType,
+		"Content-Encoding": "gzip",
+		"Accept-Encoding":  "gzip",
+	}
+
+	if s.cfg.Client.Key != "" {
+		hash, err := hasher.ComputeHashSHA256(payload, s.cfg.Client.Key)
+		if err != nil {
+			return fmt.Errorf("failed compute hash: %w", err)
+		}
+		headers["HashSHA256"] = hash
+	}
+
+	resp, err := s.client.PostWithRetry(ctx, url, headers, buf.Bytes())
 	if err != nil {
 		return err
 	}
@@ -118,14 +121,9 @@ func (s *MetricsSender) SendAllMetricsBuffer(ctx context.Context, metrics []mode
 		return fmt.Errorf("marshal metric: %w", err)
 	}
 
-	var buf bytes.Buffer
-	gz := gzip.NewWriter(&buf)
-	if _, err := gz.Write(payload); err != nil {
-		gz.Close()
-		return fmt.Errorf("gzip write: %w", err)
-	}
-	if err := gz.Close(); err != nil {
-		return fmt.Errorf("gzip close: %w", err)
+	buf, err := s.compressGzip(payload)
+	if err != nil {
+		return err
 	}
 
 	url := fmt.Sprintf("http://%s/updates", s.cfg.Client.Address)
@@ -134,7 +132,13 @@ func (s *MetricsSender) SendAllMetricsBuffer(ctx context.Context, metrics []mode
 		"Content-Encoding": "gzip",
 		"Accept-Encoding":  "gzip",
 	}
-
+	if s.cfg.Client.Key != "" {
+		hash, err := hasher.ComputeHashSHA256(payload, s.cfg.Client.Key)
+		if err != nil {
+			return fmt.Errorf("failed compute hash: %w", err)
+		}
+		headers["HashSHA256"] = hash
+	}
 	resp, err := s.client.PostWithRetry(ctx, url, headers, buf.Bytes())
 	if err != nil {
 		return err
@@ -143,4 +147,17 @@ func (s *MetricsSender) SendAllMetricsBuffer(ctx context.Context, metrics []mode
 		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
 	}
 	return nil
+}
+
+func (s *MetricsSender) compressGzip(payload []byte) (bytes.Buffer, error) {
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	if _, err := gz.Write(payload); err != nil {
+		gz.Close()
+		return bytes.Buffer{}, fmt.Errorf("gzip write: %w", err)
+	}
+	if err := gz.Close(); err != nil {
+		return bytes.Buffer{}, fmt.Errorf("gzip close: %w", err)
+	}
+	return buf, nil
 }

@@ -309,7 +309,7 @@ func TestMetricsSender_sendGaugeJSON(t *testing.T) {
 			}
 
 			sender := NewMetricsSender(cfg)
-			err = sender.SendGaugeJSON(tt.metricName, tt.metricValue)
+			err = sender.SendGaugeJSON(t.Context(), tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -327,7 +327,7 @@ func TestMetricsSender_sendGaugeJSON_InvalidURL(t *testing.T) {
 		},
 	}
 	sender := NewMetricsSender(cfg)
-	err := sender.SendGaugeJSON("testGauge", 123.45)
+	err := sender.SendGaugeJSON(t.Context(), "testGauge", 123.45)
 	require.Error(t, err)
 }
 
@@ -441,7 +441,7 @@ func TestMetricsSender_sendCounterJSON(t *testing.T) {
 			}
 
 			sender := NewMetricsSender(cfg)
-			err = sender.SendCounterJSON(tt.metricName, tt.metricValue)
+			err = sender.SendCounterJSON(t.Context(), tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -470,6 +470,6 @@ func TestMetricsSender_sendCounterJSON_InvalidURL(t *testing.T) {
 		},
 	}
 	sender := NewMetricsSender(cfg)
-	err := sender.SendCounterJSON("testCounter", 5)
+	err := sender.SendCounterJSON(t.Context(), "testCounter", 5)
 	require.Error(t, err)
 }

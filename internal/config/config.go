@@ -18,12 +18,15 @@ type ServerConfig struct {
 	FileStoragePath string `yaml:"fileStoragePath"`
 	Restore         *bool  `yaml:"restore"`
 	DatabaseDSN     string `yaml:"databaseDSN"`
+	Key             string `yaml:"key"`
 }
 
 type ClientConfig struct {
 	Address        string `yaml:"address"`
 	PollInterval   int64  `yaml:"pollInterval"`
 	ReportInterval int64  `yaml:"reportInterval"`
+	Key            string `yaml:"key"`
+	RateLimit      int    `yaml:"rateLimit"`
 }
 
 func (s *ServerConfig) GetStoreInterval() time.Duration {

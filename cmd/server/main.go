@@ -33,6 +33,7 @@ func main() {
 		FileStoragePath: envVar.FileStoragePath,
 		Restore:         envVar.Restore,
 		DatabaseDSN:     envVar.DatabaseDSN,
+		Key:             envVar.Key,
 	}
 	if server.Address == "" {
 		server.Address = flags.Address
@@ -49,7 +50,9 @@ func main() {
 	if server.DatabaseDSN == "" {
 		server.DatabaseDSN = flags.DatabaseDSN
 	}
-
+	if server.Key == "" {
+		server.Key = flags.Key
+	}
 	cfg := &config.Config{Server: server}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

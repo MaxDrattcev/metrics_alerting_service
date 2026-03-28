@@ -11,6 +11,7 @@ type ServerFlags struct {
 	FileStoragePath string
 	Restore         bool
 	DatabaseDSN     string
+	Key             string
 }
 
 func parseServerFlags() (*ServerFlags, error) {
@@ -18,8 +19,9 @@ func parseServerFlags() (*ServerFlags, error) {
 		address         = flag.String("a", "localhost:8080", "адрес и порт сервера")
 		storeInterval   = flag.Int("i", 300, "периодичность сохранения метрик в файл")
 		fileStoragePath = flag.String("f", "metrics.json", "путь до файла")
-		restore         = flag.Bool("r", true, "загружать данные из файла при старте сервера")
+		restore         = flag.Bool("r", false, "загружать данные из файла при старте сервера")
 		dataBaseDSN     = flag.String("d", "", "строка адреса подключения")
+		key             = flag.String("k", "", "Ключ")
 	)
 
 	flag.Parse()
@@ -34,5 +36,6 @@ func parseServerFlags() (*ServerFlags, error) {
 		FileStoragePath: *fileStoragePath,
 		Restore:         *restore,
 		DatabaseDSN:     *dataBaseDSN,
+		Key:             *key,
 	}, nil
 }

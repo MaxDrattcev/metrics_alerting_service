@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/mocks"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/gin-gonic/gin"
@@ -110,7 +111,12 @@ func TestMetricsJSONHandler_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockSvc := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockSvc)
-			h := NewMetricsJSONHandler(mockSvc)
+			cfg := &config.Config{
+				Server: config.ServerConfig{
+					Key: "",
+				},
+			}
+			h := NewMetricsJSONHandler(mockSvc, cfg)
 
 			var bodyBytes []byte
 			switch b := tt.body.(type) {
@@ -229,7 +235,12 @@ func TestMetricsJSONHandler_GetMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockSvc := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockSvc)
-			h := NewMetricsJSONHandler(mockSvc)
+			cfg := &config.Config{
+				Server: config.ServerConfig{
+					Key: "",
+				},
+			}
+			h := NewMetricsJSONHandler(mockSvc, cfg)
 
 			var bodyBytes []byte
 			switch b := tt.body.(type) {
@@ -290,7 +301,12 @@ func TestMetricsJSONHandler_GetAllMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockSvc := mocks.NewMockMetricsService(t)
 			tt.setupMock(mockSvc)
-			h := NewMetricsJSONHandler(mockSvc)
+			cfg := &config.Config{
+				Server: config.ServerConfig{
+					Key: "",
+				},
+			}
+			h := NewMetricsJSONHandler(mockSvc, cfg)
 
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
