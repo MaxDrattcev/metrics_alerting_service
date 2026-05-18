@@ -14,7 +14,7 @@ func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handl
 
 	router.Use(gin.Recovery())
 
-	router.Use(middleware.Logger(), middleware.Compress())
+	router.Use(middleware.Logger(), middleware.Compress(), middleware.ClientIP())
 
 	if files, err := filepath.Glob("templates/*"); err == nil && len(files) > 0 {
 		router.LoadHTMLGlob("templates/*")

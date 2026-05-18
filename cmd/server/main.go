@@ -34,6 +34,8 @@ func main() {
 		Restore:         envVar.Restore,
 		DatabaseDSN:     envVar.DatabaseDSN,
 		Key:             envVar.Key,
+		AuditFile:       envVar.AuditFile,
+		AuditURL:        envVar.AuditURL,
 	}
 	if server.Address == "" {
 		server.Address = flags.Address
@@ -52,6 +54,12 @@ func main() {
 	}
 	if server.Key == "" {
 		server.Key = flags.Key
+	}
+	if server.AuditFile == "" {
+		server.AuditFile = flags.AuditFile
+	}
+	if server.AuditURL == "" {
+		server.AuditURL = flags.AuditURL
 	}
 	cfg := &config.Config{Server: server}
 

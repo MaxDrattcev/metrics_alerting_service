@@ -15,6 +15,8 @@ type EnvVar struct {
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 	Key             string `env:"KEY"`
 	RateLimit       int    `env:"RATE_LIMIT"`
+	AuditFile       string `env:"AUDIT_FILE"`
+	AuditURL        string `env:"AUDIT_URL"`
 }
 
 func LoadEnvVar() (EnvVar, error) {

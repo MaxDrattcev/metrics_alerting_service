@@ -19,6 +19,8 @@ type ServerConfig struct {
 	Restore         *bool  `yaml:"restore"`
 	DatabaseDSN     string `yaml:"databaseDSN"`
 	Key             string `yaml:"key"`
+	AuditFile       string `yaml:"auditFile"`
+	AuditURL        string `yaml:"auditUrl"`
 }
 
 type ClientConfig struct {

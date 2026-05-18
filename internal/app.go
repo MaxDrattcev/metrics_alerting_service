@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/audit"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/handler"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/repository"
@@ -26,9 +27,10 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	} else {
 		metricsRepo = repository.NewMemStorage()
 	}
+	auditPub := audit.NewFromConfig(cfg.Server)
 
 	metricsFile := repository.NewFileStorage(cfg.Server.FileStoragePath)
-	metricsService := service.NewMetricsService(metricsRepo, metricsFile, cfg)
+	metricsService := service.NewMetricsService(metricsRepo, metricsFile, cfg, auditPub)
 	fileService := service.NewMetricsFileService(metricsRepo, metricsFile, cfg)
 
 	ctxLoad, cancel := context.WithTimeout(context.Background(), 10*time.Second)

@@ -12,6 +12,8 @@ type ServerFlags struct {
 	Restore         bool
 	DatabaseDSN     string
 	Key             string
+	AuditFile       string
+	AuditURL        string
 }
 
 func parseServerFlags() (*ServerFlags, error) {
@@ -22,6 +24,8 @@ func parseServerFlags() (*ServerFlags, error) {
 		restore         = flag.Bool("r", false, "загружать данные из файла при старте сервера")
 		dataBaseDSN     = flag.String("d", "", "строка адреса подключения")
 		key             = flag.String("k", "", "Ключ")
+		auditFile       = flag.String("audit-file", "", "путь к файлу с логами аудита")
+		auditURL        = flag.String("audit-url", "", "полный url по которому отправляются логи аудита")
 	)
 
 	flag.Parse()
@@ -37,5 +41,7 @@ func parseServerFlags() (*ServerFlags, error) {
 		Restore:         *restore,
 		DatabaseDSN:     *dataBaseDSN,
 		Key:             *key,
+		AuditFile:       *auditFile,
+		AuditURL:        *auditURL,
 	}, nil
 }
