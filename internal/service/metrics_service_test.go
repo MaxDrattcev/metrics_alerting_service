@@ -90,7 +90,7 @@ func TestMetricsService_UpdateGauge(t *testing.T) {
 			cfg := testServerConfig(300, false)
 			tt.setupMock(mockRepo)
 
-			svc := NewMetricsService(mockRepo, mockFile, cfg)
+			svc := NewMetricsService(mockRepo, mockFile, cfg, nil)
 			err := svc.UpdateGauge(context.Background(), tt.mType, tt.mName, tt.mValue)
 
 			if tt.wantErr {
@@ -178,7 +178,7 @@ func TestMetricsService_UpdateCounter(t *testing.T) {
 			cfg := testServerConfig(300, false)
 			tt.setupMock(mockRepo)
 
-			svc := NewMetricsService(mockRepo, mockFile, cfg)
+			svc := NewMetricsService(mockRepo, mockFile, cfg, nil)
 			err := svc.UpdateCounter(context.Background(), tt.mType, tt.mName, tt.mValue)
 
 			if tt.wantErr {
@@ -205,7 +205,7 @@ func TestMetricsService_UpdateGauge_MetricStructure(t *testing.T) {
 			metric.Hash == ""
 	})).Return(nil)
 
-	svc := NewMetricsService(mockRepo, mockFile, cfg)
+	svc := NewMetricsService(mockRepo, mockFile, cfg, nil)
 	err := svc.UpdateGauge(context.Background(), models.Gauge, "testGauge", floatPtr(123.45))
 
 	require.NoError(t, err)
@@ -225,7 +225,7 @@ func TestMetricsService_UpdateCounter_MetricStructure(t *testing.T) {
 			metric.Hash == ""
 	})).Return(nil)
 
-	svc := NewMetricsService(mockRepo, mockFile, cfg)
+	svc := NewMetricsService(mockRepo, mockFile, cfg, nil)
 	err := svc.UpdateCounter(context.Background(), models.Counter, "testCounter", int64Ptr(5))
 
 	require.NoError(t, err)
@@ -420,7 +420,7 @@ func TestMetricsService_GetMetric(t *testing.T) {
 			cfg := testServerConfig(300, false)
 			tt.setupMock(mockRepo)
 
-			svc := NewMetricsService(mockRepo, mockFile, cfg)
+			svc := NewMetricsService(mockRepo, mockFile, cfg, nil)
 			value, err := svc.GetMetric(context.Background(), tt.mType, tt.mName)
 
 			if tt.wantErr {
@@ -528,7 +528,7 @@ func TestMetricsService_GetAllMetrics(t *testing.T) {
 			cfg := testServerConfig(300, false)
 			tt.setupMock(mockRepo)
 
-			svc := NewMetricsService(mockRepo, mockFile, cfg)
+			svc := NewMetricsService(mockRepo, mockFile, cfg, nil)
 			metrics, err := svc.GetAllMetrics(context.Background())
 
 			if tt.wantErr {
