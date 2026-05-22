@@ -50,7 +50,7 @@ func (m *MemStorage) UpdateCounter(ctx context.Context, metric models.Metrics) e
 }
 
 func (m *MemStorage) key(mName, mType string) string {
-	return fmt.Sprintf("%s:%s", mName, mType)
+	return mName + ":" + mType
 }
 
 func (m *MemStorage) exists(key string) bool {

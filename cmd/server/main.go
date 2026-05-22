@@ -11,6 +11,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 )
@@ -74,6 +76,11 @@ func main() {
 		defer pool.Close()
 	}
 	app := internal.NewApp(cfg, pool)
+
+	go func() {
+		log.Println("pprof on http://localhost:6060/debug/pprof/")
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	if err := app.Run(); err != nil {
 		log.Fatalf("Failed to run app: %v", err)
