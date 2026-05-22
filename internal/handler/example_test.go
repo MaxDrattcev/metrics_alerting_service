@@ -88,9 +88,11 @@ func ExampleNewMetricsHandler_getGauge() {
 	ts := exampleServer()
 	defer ts.Close()
 
-	if _, err := http.Post(ts.URL+"/update/gauge/Alloc/27", "text/plain", http.NoBody); err != nil {
+	setupResp, err := http.Post(ts.URL+"/update/gauge/Alloc/27", "text/plain", http.NoBody)
+	if err != nil {
 		panic(err)
 	}
+	setupResp.Body.Close()
 
 	resp, err := http.Get(ts.URL + "/value/gauge/Alloc")
 	if err != nil {
@@ -161,9 +163,12 @@ func ExampleNewMetricsJSONHandler_getValue() {
 		panic(err)
 	}
 	reqUpdate.Header.Set("Content-Type", "application/json")
-	if _, err := http.DefaultClient.Do(reqUpdate); err != nil {
+
+	updateResp, err := http.DefaultClient.Do(reqUpdate)
+	if err != nil {
 		panic(err)
 	}
+	updateResp.Body.Close()
 
 	getBody, err := json.Marshal(models.Metrics{
 		ID:    "Alloc",
@@ -248,9 +253,12 @@ func ExampleNewMetricsJSONHandler_getAllMetrics() {
 		panic(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if _, err := http.DefaultClient.Do(req); err != nil {
+
+	updateResp, err := http.DefaultClient.Do(req)
+	if err != nil {
 		panic(err)
 	}
+	updateResp.Body.Close()
 
 	resp, err := http.Get(ts.URL + "/metrics")
 	if err != nil {
