@@ -19,6 +19,7 @@ type metricsJSONHandler struct {
 	cfg     *config.Config
 }
 
+// NewMetricsJSONHandler создаёт обработчик JSON API (/update, /updates, /value).
 func NewMetricsJSONHandler(service service.MetricsService, cfg *config.Config) MetricsHandler {
 	return &metricsJSONHandler{
 		service: service,

@@ -8,11 +8,13 @@ import (
 	"time"
 )
 
+// HTTPSink отправляет события аудита POST-запросом в JSON.
 type HTTPSink struct {
 	url    string
 	client *http.Client
 }
 
+// NewHTTPSink создаёт HTTP-приёмник аудита.
 func NewHTTPSink(url string) *HTTPSink {
 	return &HTTPSink{
 		url:    url,

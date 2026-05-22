@@ -34,6 +34,7 @@ var retryablePGCodes = map[string]bool{
 
 var dbRetryDelays = []time.Duration{1 * time.Second, 3 * time.Second, 5 * time.Second}
 
+// WithTxRetry выполняет fn в транзакции с повтором при retriable-ошибках PostgreSQL.
 func WithTxRetry(ctx context.Context, pool *pgxpool.Pool, fn func(pgx.Tx) error) error {
 	var lastErr error
 

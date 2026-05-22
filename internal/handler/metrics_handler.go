@@ -20,6 +20,7 @@ type metricsHandler struct {
 	service service.MetricsService
 }
 
+// NewMetricsHandler создаёт обработчик для legacy-маршрутов (/update/:type/...).
 func NewMetricsHandler(service service.MetricsService) MetricsHandler {
 	return &metricsHandler{
 		service: service,

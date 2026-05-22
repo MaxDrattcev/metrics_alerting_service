@@ -10,6 +10,7 @@ type ctxKey string
 
 const clientIPKey ctxKey = "client_ip"
 
+// ClientIP сохраняет IP клиента в context.Request для последующего аудита.
 func ClientIP() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := context.WithValue(c.Request.Context(), clientIPKey, c.ClientIP())
@@ -18,6 +19,7 @@ func ClientIP() gin.HandlerFunc {
 	}
 }
 
+// ClientIPFromContext возвращает IP клиента из context (пустая строка, если не задан).
 func ClientIPFromContext(ctx context.Context) string {
 	ip, _ := ctx.Value(clientIPKey).(string)
 	return ip

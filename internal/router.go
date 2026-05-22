@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// SetupRouter регистрирует маршруты API метрик и middleware.
 func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handler.MetricsHandler, pool *pgxpool.Pool) http.Handler {
 	router := gin.New()
 

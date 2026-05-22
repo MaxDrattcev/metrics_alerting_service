@@ -8,11 +8,13 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
 
+// MemStorage — in-memory реализация MetricsStorage с mutex.
 type MemStorage struct {
 	metrics map[string]models.Metrics
 	mu      sync.RWMutex
 }
 
+// NewMemStorage создаёт пустое in-memory хранилище метрик.
 func NewMemStorage() MetricsStorage {
 	return &MemStorage{
 		metrics: make(map[string]models.Metrics),

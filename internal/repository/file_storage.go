@@ -14,6 +14,7 @@ type fileStorage struct {
 	mu   sync.Mutex
 }
 
+// NewFileStorage создаёт FileStorage с записью в указанный путь к JSON-файлу.
 func NewFileStorage(path string) FileStorage {
 	return &fileStorage{
 		path: path,

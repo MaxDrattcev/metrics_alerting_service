@@ -42,6 +42,7 @@ func (w *gzipResponseWriter) WriteString(s string) (int, error) {
 	return w.gz.Write([]byte(s))
 }
 
+// Compress поддерживает gzip для тела запроса и ответа (Accept-Encoding / Content-Encoding).
 func Compress() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if strings.Contains(c.GetHeader("Content-Encoding"), "gzip") {

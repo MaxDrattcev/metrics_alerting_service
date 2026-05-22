@@ -5,13 +5,16 @@ import (
 	"os"
 )
 
+// FileSink записывает события аудита в файл (append, JSON-строка на строку).
 type FileSink struct {
 	path string
 }
 
+// NewFileSink создаёт файловый приёмник аудита.
 func NewFileSink(path string) *FileSink {
 	return &FileSink{path: path}
 }
+
 func (s *FileSink) Notify(event Event) error {
 	b, err := json.Marshal(event)
 	if err != nil {

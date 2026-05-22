@@ -11,10 +11,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// PostgresStorage — реализация MetricsStorage на PostgreSQL (pgx).
 type PostgresStorage struct {
 	pool *pgxpool.Pool
 }
 
+// NewPostgresStorage создаёт хранилище метрик с использованием пула соединений.
 func NewPostgresStorage(pool *pgxpool.Pool) MetricsStorage {
 	return &PostgresStorage{
 		pool: pool,

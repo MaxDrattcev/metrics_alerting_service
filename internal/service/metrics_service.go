@@ -20,6 +20,7 @@ type metricsService struct {
 	audit *audit.Publisher
 }
 
+// NewMetricsService создаёт сервис метрик с указанным хранилищем, файлом и аудитом.
 func NewMetricsService(repo repository.MetricsStorage, file repository.FileStorage, cfg *config.Config,
 	auditPub *audit.Publisher) MetricsService {
 	return &metricsService{

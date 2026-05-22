@@ -9,17 +9,20 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 )
 
+// MetricsScheduler запускает фоновую запись метрик по StoreInterval.
 type MetricsScheduler struct {
 	cfg         *config.Config
 	fileService service.FileService
 }
 
+// NewMetricsScheduler создаёт планировщик записи в файл.
 func NewMetricsScheduler(cfg *config.Config, fileService service.FileService) *MetricsScheduler {
 	return &MetricsScheduler{
 		cfg:         cfg,
 		fileService: fileService}
 }
 
+// RunWriteMetricsFile в цикле вызывает WriteMetricsFile с интервалом из конфига.
 func (ms *MetricsScheduler) RunWriteMetricsFile(ctx context.Context) {
 	if *ms.cfg.Server.StoreInterval == 0 {
 		return

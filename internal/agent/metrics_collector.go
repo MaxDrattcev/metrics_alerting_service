@@ -10,6 +10,7 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
+// MetricsCollector собирает метрики из runtime.MemStats и случайное значение.
 type MetricsCollector struct {
 	metrics      map[string]float64
 	pollCount    int64
@@ -18,6 +19,7 @@ type MetricsCollector struct {
 	cpuReady     bool
 }
 
+// NewMetricsCollector создаёт коллектор метрик.
 func NewMetricsCollector() *MetricsCollector {
 	return &MetricsCollector{
 		metrics: make(map[string]float64),

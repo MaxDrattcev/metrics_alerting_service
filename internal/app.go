@@ -15,12 +15,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// App — точка входа HTTP-приложения: роутер и конфигурация.
 type App struct {
 	handler handler.MetricsHandler
 	router  http.Handler
 	config  *config.Config
 }
 
+// NewApp инициализирует хранилище, сервисы, handlers и HTTP-роутер.
 func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	var metricsRepo repository.MetricsStorage
 	if cfg.Server.DatabaseDSN != "" {
@@ -54,6 +56,7 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	}
 }
 
+// Run запускает HTTP-сервер на адресе из конфигурации.
 func (a *App) Run() error {
 	log.Printf("Server starting on %s", a.config.Server.Address)
 	log.Fatal(http.ListenAndServe(a.config.Server.Address, a.router))

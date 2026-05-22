@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ValidateContentType проверяет заголовок Content-Type для JSON-эндпоинтов.
 func ValidateContentType() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.Request.Method == http.MethodPost {

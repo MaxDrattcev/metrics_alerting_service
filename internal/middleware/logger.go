@@ -17,6 +17,7 @@ func init() {
 	}
 }
 
+// Logger логирует метод, URI, статус и длительность каждого запроса.
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()

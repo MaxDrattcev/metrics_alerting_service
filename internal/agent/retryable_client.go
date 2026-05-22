@@ -14,10 +14,12 @@ import (
 
 var retryDelays = []time.Duration{1 * time.Second, 3 * time.Second, 5 * time.Second}
 
+// RetryableClient — HTTP-клиент с повторными попытками при сбоях.
 type RetryableClient struct {
 	*resty.Client
 }
 
+// NewRetryableClient создаёт клиент с retry.
 func NewRetryableClient() *RetryableClient {
 	c := resty.New()
 	c.SetTimeout(5 * time.Second)

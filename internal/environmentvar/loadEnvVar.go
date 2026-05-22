@@ -6,6 +6,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// EnvVar — переменные окружения сервера и агента.
 type EnvVar struct {
 	Address         string `env:"ADDRESS"`
 	ReportInterval  int64  `env:"REPORT_INTERVAL"`
@@ -20,6 +21,7 @@ type EnvVar struct {
 	AuditURL        string `env:"AUDIT_URL"`
 }
 
+// LoadEnvVar парсит переменные окружения в структуру EnvVar.
 func LoadEnvVar() (EnvVar, error) {
 	var envVar EnvVar
 	err := env.Parse(&envVar)

@@ -10,6 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// NewConDB создаёт пул PostgreSQL и выполняет миграции, если задан DatabaseDSN.
+// При пустом DSN возвращает nil без ошибки.
 func NewConDB(ctx context.Context, cfg config.Config, pathMigration string) (*pgxpool.Pool, error) {
 	var pool *pgxpool.Pool
 	if cfg.Server.DatabaseDSN != "" {

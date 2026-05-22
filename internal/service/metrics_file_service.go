@@ -8,12 +8,14 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/repository"
 )
 
+// MetricsFileService реализует FileService: снимок метрик на диск по расписанию.
 type MetricsFileService struct {
 	repo repository.MetricsStorage
 	file repository.FileStorage
 	cfg  *config.Config
 }
 
+// NewMetricsFileService создаёт сервис файлового хранения метрик.
 func NewMetricsFileService(repo repository.MetricsStorage, file repository.FileStorage, cfg *config.Config) FileService {
 	return &MetricsFileService{
 		repo: repo,
