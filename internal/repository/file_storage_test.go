@@ -1,11 +1,12 @@
 package repository
 
 import (
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewFileStorage(t *testing.T) {

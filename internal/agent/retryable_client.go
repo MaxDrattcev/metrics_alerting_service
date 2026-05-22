@@ -3,12 +3,13 @@ package agent
 import (
 	"context"
 	"errors"
-	"github.com/go-resty/resty/v2"
 	"net"
 	"net/http"
 	"os"
 	"syscall"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 var retryDelays = []time.Duration{1 * time.Second, 3 * time.Second, 5 * time.Second}

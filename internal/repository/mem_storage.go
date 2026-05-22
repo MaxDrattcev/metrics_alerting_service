@@ -3,8 +3,9 @@ package repository
 import (
 	"context"
 	"fmt"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"sync"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
 
 type MemStorage struct {

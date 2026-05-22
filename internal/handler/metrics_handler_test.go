@@ -2,15 +2,16 @@ package handler
 
 import (
 	"errors"
+	"html/template"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/mocks"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"html/template"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func floatPtr(v float64) *float64 {

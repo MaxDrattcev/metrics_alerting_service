@@ -3,15 +3,16 @@ package agent
 import (
 	"compress/gzip"
 	"encoding/json"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMetricsSender_SendGauge(t *testing.T) {

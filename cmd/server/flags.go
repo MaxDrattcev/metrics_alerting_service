@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/flags"
 )
 

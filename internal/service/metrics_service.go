@@ -3,13 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/audit"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/middleware"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/repository"
-	"strconv"
-	"time"
 )
 
 type metricsService struct {

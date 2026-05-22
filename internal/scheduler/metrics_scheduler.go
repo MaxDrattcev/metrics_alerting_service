@@ -2,10 +2,11 @@ package scheduler
 
 import (
 	"context"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 	"log"
 	"time"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 )
 
 type MetricsScheduler struct {

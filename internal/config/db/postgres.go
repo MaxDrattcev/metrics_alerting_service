@@ -3,10 +3,11 @@ package db
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"time"
 )
 
 func NewConDB(ctx context.Context, cfg config.Config, pathMigration string) (*pgxpool.Pool, error) {

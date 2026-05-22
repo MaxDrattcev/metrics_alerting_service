@@ -1,12 +1,13 @@
 package internal
 
 import (
+	"net/http"
+	"path/filepath"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/handler"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"net/http"
-	"path/filepath"
 )
 
 func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handler.MetricsHandler, pool *pgxpool.Pool) http.Handler {

@@ -1,12 +1,13 @@
 package handler
 
 import (
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
+	"github.com/gin-gonic/gin"
 )
 
 const (

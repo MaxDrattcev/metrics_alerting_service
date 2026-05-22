@@ -3,9 +3,10 @@ package repository
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"os"
 	"sync"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
 
 type fileStorage struct {

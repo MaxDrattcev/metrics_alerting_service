@@ -2,11 +2,12 @@ package middleware
 
 import (
 	"compress/gzip"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/gin-gonic/gin"
 )
 
 var gzipWriterPool = sync.Pool{

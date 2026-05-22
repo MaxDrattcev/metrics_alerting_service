@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"time"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config/db"
@@ -10,11 +16,6 @@ import (
 	"github.com/bytedance/gopkg/util/logger"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"log"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"time"
 )
 
 func main() {

@@ -2,11 +2,12 @@ package agent
 
 import (
 	"context"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
 
 type Agent struct {

@@ -6,10 +6,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/hasher"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
-	"net/http"
 )
 
 const (

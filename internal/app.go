@@ -2,6 +2,10 @@ package internal
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/audit"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/handler"
@@ -9,9 +13,6 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/scheduler"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"log"
-	"net/http"
-	"time"
 )
 
 type App struct {
