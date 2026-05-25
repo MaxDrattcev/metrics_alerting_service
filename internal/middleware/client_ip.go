@@ -21,6 +21,9 @@ func ClientIP() gin.HandlerFunc {
 
 // ClientIPFromContext возвращает IP клиента из context (пустая строка, если не задан).
 func ClientIPFromContext(ctx context.Context) string {
-	ip, _ := ctx.Value(clientIPKey).(string)
+	ip, ok := ctx.Value(clientIPKey).(string)
+	if !ok {
+		return ""
+	}
 	return ip
 }

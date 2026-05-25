@@ -7,7 +7,9 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
 
-func benchmarkBatchMetrics() []models.Metrics {
+func benchmarkBatchMetrics(b *testing.B) []models.Metrics {
+	b.Helper()
+
 	gaugeNames := []string{
 		"Alloc", "BuckHashSys", "Frees", "GCCPUFraction", "GCSys",
 		"HeapAlloc", "HeapIdle", "HeapInuse", "HeapObjects", "HeapReleased",
@@ -33,11 +35,15 @@ func benchmarkBatchMetrics() []models.Metrics {
 
 func fillMemStorage(b *testing.B, n int) *MemStorage {
 	b.Helper()
+
 	s := NewMemStorage().(*MemStorage)
-	batch := benchmarkBatchMetrics()
+	batch := benchmarkBatchMetrics(b)
 	ctx := context.Background()
+
 	for i := 0; i < n; i++ {
-		_ = s.UpdateMetrics(ctx, batch)
+		if err := s.UpdateMetrics(ctx, batch); err != nil {
+			b.Fatal(err)
+		}
 	}
 	return s
 }
@@ -49,8 +55,7 @@ func BenchmarkMemStorage_UpdateGauge(b *testing.B) {
 	metric := models.Metrics{ID: "Alloc", MType: models.Gauge, Value: &v}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if err := s.UpdateGauge(ctx, metric); err != nil {
 			b.Fatal(err)
 		}
@@ -64,8 +69,7 @@ func BenchmarkMemStorage_UpdateCounter(b *testing.B) {
 	metric := models.Metrics{ID: "PollCount", MType: models.Counter, Delta: &d}
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if err := s.UpdateCounter(ctx, metric); err != nil {
 			b.Fatal(err)
 		}
@@ -75,11 +79,10 @@ func BenchmarkMemStorage_UpdateCounter(b *testing.B) {
 func BenchmarkMemStorage_UpdateMetrics(b *testing.B) {
 	s := NewMemStorage()
 	ctx := context.Background()
-	batch := benchmarkBatchMetrics()
+	batch := benchmarkBatchMetrics(b)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		metrics := make([]models.Metrics, len(batch))
 		copy(metrics, batch)
 		if err := s.UpdateMetrics(ctx, metrics); err != nil {
@@ -93,8 +96,7 @@ func BenchmarkMemStorage_GetAllMetrics(b *testing.B) {
 	ctx := context.Background()
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, err := s.GetAllMetrics(ctx); err != nil {
 			b.Fatal(err)
 		}

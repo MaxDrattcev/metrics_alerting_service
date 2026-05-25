@@ -7,7 +7,9 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
 
-func benchmarkUpdatesJSON() []byte {
+func benchmarkUpdatesJSON(b *testing.B) []byte {
+	b.Helper()
+
 	v := 123.45
 	d := int64(1)
 	names := []string{
@@ -20,19 +22,19 @@ func benchmarkUpdatesJSON() []byte {
 		metrics = append(metrics, models.Metrics{ID: name, MType: models.Gauge, Value: &val})
 	}
 	metrics = append(metrics, models.Metrics{ID: "PollCount", MType: models.Counter, Delta: &d})
+
 	body, err := json.Marshal(metrics)
 	if err != nil {
-		panic(err)
+		b.Fatal(err)
 	}
 	return body
 }
 
 func BenchmarkUnmarshalUpdatesBody(b *testing.B) {
-	body := benchmarkUpdatesJSON()
+	body := benchmarkUpdatesJSON(b)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var metrics []models.Metrics
 		if err := json.Unmarshal(body, &metrics); err != nil {
 			b.Fatal(err)
@@ -42,8 +44,7 @@ func BenchmarkUnmarshalUpdatesBody(b *testing.B) {
 
 func BenchmarkMarshalUpdatesResponse(b *testing.B) {
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, err := json.Marshal(map[string]any{}); err != nil {
 			b.Fatal(err)
 		}

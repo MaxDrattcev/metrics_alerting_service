@@ -78,6 +78,12 @@ func main() {
 	}
 	app := internal.NewApp(cfg, pool)
 
+	defer func() {
+		if err := app.Close(); err != nil {
+			log.Printf("app close: %v", err)
+		}
+	}()
+
 	go func() {
 		log.Println("pprof on http://localhost:6060/debug/pprof/")
 		log.Println(http.ListenAndServe("localhost:6060", nil))

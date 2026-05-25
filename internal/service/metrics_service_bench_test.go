@@ -9,7 +9,9 @@ import (
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/repository"
 )
 
-func benchConfig(storeInterval int64) *config.Config {
+func benchConfig(b *testing.B, storeInterval int64) *config.Config {
+	b.Helper()
+
 	return &config.Config{
 		Server: config.ServerConfig{
 			StoreInterval: &storeInterval,
@@ -20,29 +22,24 @@ func benchConfig(storeInterval int64) *config.Config {
 
 func ptrBool(v bool) *bool { return &v }
 
-func serviceWithMem(storeInterval int64) MetricsService {
+func serviceWithMem(b *testing.B, storeInterval int64) MetricsService {
+	b.Helper()
+
 	repo := repository.NewMemStorage()
 	file := &noopFileStorage{}
-	return NewMetricsService(repo, file, benchConfig(storeInterval), nil) // nil = без аудита (iter16)
+	return NewMetricsService(repo, file, benchConfig(b, storeInterval), nil)
 }
 
 type noopFileStorage struct{}
 
 func (n *noopFileStorage) WriteMetrics([]models.Metrics) error { return nil }
+
 func (n *noopFileStorage) ReadMetrics() ([]models.Metrics, error) {
 	return nil, nil
 }
 
-func benchmarkServiceBatch() []models.Metrics {
-	gaugeNames := []string{
-		"Alloc", "Frees", "HeapAlloc", "RandomValue", "Sys", "TotalAlloc",
-	}
-	metrics := make([]models.Metrics, 0, 30)
-	v := 100.0
-	for _, name := range gaugeNames {
-		val := v
-		metrics = append(metrics, models.Metrics{ID: name, MType: models.Gauge, Value: &val})
-	}
+func benchmarkServiceBatch(b *testing.B) []models.Metrics {
+	b.Helper()
 
 	full := []string{
 		"Alloc", "BuckHashSys", "Frees", "GCCPUFraction", "GCSys",
@@ -52,7 +49,8 @@ func benchmarkServiceBatch() []models.Metrics {
 		"NumGC", "OtherSys", "PauseTotalNs", "StackInuse", "StackSys",
 		"Sys", "TotalAlloc", "RandomValue",
 	}
-	metrics = metrics[:0]
+	metrics := make([]models.Metrics, 0, len(full)+1)
+	v := 100.0
 	for _, name := range full {
 		val := v
 		metrics = append(metrics, models.Metrics{ID: name, MType: models.Gauge, Value: &val})
@@ -63,13 +61,12 @@ func benchmarkServiceBatch() []models.Metrics {
 }
 
 func BenchmarkMetricsService_UpdateMetrics(b *testing.B) {
-	svc := serviceWithMem(300)
+	svc := serviceWithMem(b, 300)
 	ctx := context.Background()
-	batch := benchmarkServiceBatch()
+	batch := benchmarkServiceBatch(b)
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		metrics := make([]models.Metrics, len(batch))
 		copy(metrics, batch)
 		if err := svc.UpdateMetrics(ctx, metrics); err != nil {
@@ -79,13 +76,12 @@ func BenchmarkMetricsService_UpdateMetrics(b *testing.B) {
 }
 
 func BenchmarkMetricsService_UpdateGauge(b *testing.B) {
-	svc := serviceWithMem(300)
+	svc := serviceWithMem(b, 300)
 	ctx := context.Background()
 	v := 42.0
 
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if err := svc.UpdateGauge(ctx, models.Gauge, "Alloc", &v); err != nil {
 			b.Fatal(err)
 		}

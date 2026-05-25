@@ -17,9 +17,10 @@ import (
 
 // App — точка входа HTTP-приложения: роутер и конфигурация.
 type App struct {
-	handler handler.MetricsHandler
-	router  http.Handler
-	config  *config.Config
+	handler  handler.MetricsHandler
+	router   http.Handler
+	config   *config.Config
+	auditPub *audit.Publisher
 }
 
 // NewApp инициализирует хранилище, сервисы, handlers и HTTP-роутер.
@@ -50,9 +51,10 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	router := SetupRouter(metricsHandler, metricsJSONHandler, pool)
 
 	return &App{
-		handler: metricsHandler,
-		router:  router,
-		config:  cfg,
+		handler:  metricsHandler,
+		router:   router,
+		config:   cfg,
+		auditPub: auditPub,
 	}
 }
 
@@ -61,4 +63,11 @@ func (a *App) Run() error {
 	log.Printf("Server starting on %s", a.config.Server.Address)
 	log.Fatal(http.ListenAndServe(a.config.Server.Address, a.router))
 	return nil
+}
+
+func (a *App) Close() error {
+	if a == nil {
+		return nil
+	}
+	return a.auditPub.Close()
 }

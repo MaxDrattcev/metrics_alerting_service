@@ -60,40 +60,52 @@ go test -bench=. -benchmem ./internal/repository/... ./internal/service/... ./in
 | ОС | darwin (macOS) |
 | Архитектура | arm64 |
 | CPU | Apple M1 Pro |
-| Ветка | iter17 |
+| Ветка | iter19 |
 | Go | go1.24.3 darwin/arm64 |
 
-### Результаты
+Бенчмарки запускаются с `testing.B.Loop` (Go 1.24+).
+
+### Сравнение до и после оптимизации (ключевые метрики)
+
+| Бенчмарк | До (iter17) | После (iter19) |
+|----------|-------------|----------------|
+| `MemStorage_UpdateGauge` | 102.3 ns/op, 3 allocs/op | 46.2 ns/op, 1 alloc/op |
+| `MemStorage_UpdateMetrics` | 3199 ns/op, 88 allocs/op | 1467 ns/op, 30 allocs/op |
+| `MetricsService_UpdateMetrics` | 3608 ns/op, 89 allocs/op | 1617 ns/op, 31 allocs/op |
+
+Основной выигрыш по alloc/op в batch update — за счёт `key()` и снижения давления на GC; gzip-оптимизация сильнее видна в pprof под HTTP-нагрузкой.
+
+### Результаты (после оптимизации)
 
 ```
 goos: darwin
 goarch: arm64
 pkg: github.com/MaxDrattcev/metrics_alerting_service/internal/repository
 cpu: Apple M1 Pro
-BenchmarkMemStorage_UpdateGauge-10              10815037               102.3 ns/op            48 B/op          3 allocs/op
-BenchmarkMemStorage_UpdateCounter-10             9927234               118.2 ns/op            56 B/op          3 allocs/op
-BenchmarkMemStorage_UpdateMetrics-10              364395              3199 ns/op            3513 B/op         88 allocs/op
-BenchmarkMemStorage_GetAllMetrics-10             2339740               495.6 ns/op          2048 B/op          1 allocs/op
+BenchmarkMemStorage_UpdateGauge-10              26854023                46.24 ns/op           16 B/op          1 allocs/op
+BenchmarkMemStorage_UpdateCounter-10            20889394                57.22 ns/op           24 B/op          1 allocs/op
+BenchmarkMemStorage_UpdateMetrics-10              823875              1467 ns/op            2584 B/op         30 allocs/op
+BenchmarkMemStorage_GetAllMetrics-10             2352592               501.5 ns/op          2048 B/op          1 allocs/op
 PASS
-ok      github.com/MaxDrattcev/metrics_alerting_service/internal/repository     6.277s
+ok      github.com/MaxDrattcev/metrics_alerting_service/internal/repository     4.838s
 
 goos: darwin
 goarch: arm64
 pkg: github.com/MaxDrattcev/metrics_alerting_service/internal/service
 cpu: Apple M1 Pro
-BenchmarkMetricsService_UpdateMetrics-10          351152              3608 ns/op            3994 B/op         89 allocs/op
-BenchmarkMetricsService_UpdateGauge-10          10244538               116.6 ns/op            64 B/op          4 allocs/op
+BenchmarkMetricsService_UpdateMetrics-10          732765              1617 ns/op            3064 B/op         31 allocs/op
+BenchmarkMetricsService_UpdateGauge-10          20533221                57.65 ns/op           32 B/op          2 allocs/op
 PASS
-ok      github.com/MaxDrattcev/metrics_alerting_service/internal/service        2.633s
+ok      github.com/MaxDrattcev/metrics_alerting_service/internal/service        2.380s
 
 goos: darwin
 goarch: arm64
 pkg: github.com/MaxDrattcev/metrics_alerting_service/internal/handler
 cpu: Apple M1 Pro
-BenchmarkUnmarshalUpdatesBody-10          180859              6478 ns/op            2648 B/op         44 allocs/op
-BenchmarkMarshalUpdatesResponse-10      13988832                85.03 ns/op           56 B/op          2 allocs/op
+BenchmarkUnmarshalUpdatesBody-10          181932              6549 ns/op            2648 B/op         44 allocs/op
+BenchmarkMarshalUpdatesResponse-10      13969887                96.45 ns/op           56 B/op          2 allocs/op
 PASS
-ok      github.com/MaxDrattcev/metrics_alerting_service/internal/handler        2.535s
+ok      github.com/MaxDrattcev/metrics_alerting_service/internal/handler        2.559s
 ```
 
 ### Что измеряется
@@ -115,7 +127,7 @@ ok      github.com/MaxDrattcev/metrics_alerting_service/internal/handler        
 - **B/op** — байты памяти на операцию
 - **allocs/op** — число аллокаций на операцию
 
-Наибольшая нагрузка: batch update (~88–89 allocs/op) и JSON unmarshal (44 allocs/op).
+Наибольшая нагрузка: batch update (~30–31 allocs/op) и JSON unmarshal (44 allocs/op).
 
 ## Memory optimization (pprof)
 
@@ -127,19 +139,27 @@ ok      github.com/MaxDrattcev/metrics_alerting_service/internal/handler        
 mkdir -p profiles
 ```
 
-Сервер запускается с pprof на порту `:6060` (см. `cmd/server/main.go`). Нагрузка:
+Сервер запускается с pprof на порту `:6060` (см. `cmd/server/main.go`).
+
+**1. Профиль до оптимизации (`base.pprof`):** запустить сервер **без** правок → нагрузка → снять heap:
 
 ```bash
 hey -n 10000 -c 30 -m POST \
   -H "Content-Type: application/json" \
   -D payload.json \
   http://localhost:8080/updates
+
+curl -o profiles/base.pprof http://localhost:6060/debug/pprof/heap
 ```
 
-Профили heap снимаются сразу после нагрузки:
+**2. Профиль после оптимизации (`result.pprof`):** внести изменения в код → **перезапустить** сервер → повторить `hey` → снять heap:
 
 ```bash
-curl -o profiles/base.pprof http://localhost:6060/debug/pprof/heap
+hey -n 10000 -c 30 -m POST \
+  -H "Content-Type: application/json" \
+  -D payload.json \
+  http://localhost:8080/updates
+
 curl -o profiles/result.pprof http://localhost:6060/debug/pprof/heap
 ```
 
@@ -187,4 +207,53 @@ Dropped 124 nodes (cum <= 39.09MB)
          0     0% 96.95% -7644.52MB 97.79%  github.com/MaxDrattcev/metrics_alerting_service/internal.SetupRouter.Compress.func2
 ```
 
-Файлы профилей: `base.pprof` (7.8K, до), `result.pprof` (4.6K, после).
+### Анализ результатов оптимизации
+
+#### Что показал pprof (до оптимизации)
+
+Под нагрузкой на `POST /updates` (пакет из ~29 метрик, JSON, gzip в ответе) основной объём аллокаций (`alloc_space`) приходился не на бизнес-логику хранилища, а на инфраструктуру HTTP:
+
+1. **Middleware `Compress`** — на каждый запрос с `Accept-Encoding: gzip` создавался новый `gzip.Writer` (`compress/flate.NewWriter`). В профиле это давало **~98% cumulative alloc_space**. При высокой частоте запросов это главный источник давления на GC.
+2. **`MemStorage.key()`** — ключ строился через `fmt.Sprintf`, что давало лишние аллокации на каждое обращение к map (доля меньше, но заметна в `top`).
+
+Бенчмарки до оптимизации подтверждали, что самые «тяжёлые» сценарии — пакетное обновление метрик и JSON, а не одиночный `UpdateGauge`.
+
+#### Что сделали и как
+
+| Место | Проблема | Решение |
+|-------|----------|---------|
+| `internal/middleware/compress.go` | Новый `gzip.Writer` на каждый ответ | **`sync.Pool`** на уровне пакета: writer берётся из пула, после `Close` возвращается в пул. `Reset(w)` перед использованием |
+| `internal/repository/mem_storage.go` | `fmt.Sprintf` в `key()` | Конкатенация `mType + "/" + mName` без форматирования |
+
+Идея: убрать повторяющиеся дорогие аллокации на горячем пути HTTP, не меняя внешнее API сервиса.
+
+#### Что получилось
+
+**По pprof (diff `base` → `result`, `-alloc_space`):**
+
+- Суммарное снижение alloc_space на порядок **~7.6 GB** за тот же сценарий нагрузки (в diff: **~97%** относительно baseline).
+- Почти полностью «обнулились» вкладки `compress/flate.NewWriter`, `initDeflate`, `gzip.Writer.Write/Close` — пул переиспользует deflate-состояние вместо создания с нуля.
+- Цепочка `SetupRouter` → `Compress` перестала доминировать в профиле памяти.
+
+**По бенчмаркам (см. таблицу в разделе Benchmarks):**
+
+- `UpdateGauge`: ~102 ns/op → ~46 ns/op, 3 → 1 alloc/op.
+- `UpdateMetrics` (repository): ~3200 ns/op → ~1470 ns/op, 88 → 30 allocs/op.
+- `UpdateMetrics` (service): ~3600 ns/op → ~1620 ns/op, 89 → 31 allocs/op.
+
+**По смыслу для сервиса:**
+
+- Меньше работы GC под постоянной нагрузкой агента на `/updates`.
+- Стабильнее latency ответов при gzip (меньше всплесков из-за аллокаций в middleware).
+- Оптимизация `key()` — небольшой, но бесплатный выигрыш на каждом update/get в `MemStorage`.
+
+**Что сознательно не трогали:**
+
+- Логику JSON (`encoding/json`) — 44 allocs/op на unmarshal остаются ожидаемыми для `POST /updates`; это отдельный кандидат на оптимизацию (пулы буферов, другой encoder), но не входило в этот инкремент.
+- Batch update в storage/service — основная стоимость там в копировании слайса метрик и работе с map, а не в gzip.
+
+#### Вывод
+
+Оптимизация была направлена на **главный узкий участок по памяти**, найденный через pprof: создание gzip-writer'ов в middleware. Переход на **`sync.Pool`** дал наибольший эффект; замена `fmt.Sprintf` в `key()` — дополнительное точечное улучшение. Подход: снять профиль под реальной нагрузкой → найти top по `alloc_space` → изменить минимальный участок кода → переснять профиль и сравнить через `diff_base`.
+
+Файлы профилей (размер на диске): `profiles/base.pprof` — до оптимизации, `profiles/result.pprof` — после. В репозиторий не коммитить.
