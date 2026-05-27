@@ -2,11 +2,19 @@ package middleware
 
 import (
 	"compress/gzip"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"strings"
+	"sync"
+
+	"github.com/gin-gonic/gin"
 )
+
+var gzipWriterPool = sync.Pool{
+	New: func() any {
+		return gzip.NewWriter(io.Discard)
+	},
+}
 
 type gzipReadCloser struct {
 	*gzip.Reader
@@ -34,6 +42,7 @@ func (w *gzipResponseWriter) WriteString(s string) (int, error) {
 	return w.gz.Write([]byte(s))
 }
 
+// Compress поддерживает gzip для тела запроса и ответа (Accept-Encoding / Content-Encoding).
 func Compress() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if strings.Contains(c.GetHeader("Content-Encoding"), "gzip") {
@@ -47,11 +56,15 @@ func Compress() gin.HandlerFunc {
 			c.Request.Body = &gzipReadCloser{Reader: gz, orig: originBody}
 			defer func() { _ = c.Request.Body.Close() }()
 		}
+
 		if strings.Contains(c.GetHeader("Accept-Encoding"), "gzip") {
 			c.Header("Content-Encoding", "gzip")
-			gz := gzip.NewWriter(c.Writer)
-			defer gz.Close()
-
+			gz := gzipWriterPool.Get().(*gzip.Writer)
+			gz.Reset(c.Writer)
+			defer func() {
+				_ = gz.Close()
+				gzipWriterPool.Put(gz)
+			}()
 			c.Writer = &gzipResponseWriter{
 				ResponseWriter: c.Writer,
 				gz:             gz,

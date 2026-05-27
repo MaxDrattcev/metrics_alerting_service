@@ -3,15 +3,18 @@ package repository
 import (
 	"context"
 	"fmt"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"sync"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
 
+// MemStorage — in-memory реализация MetricsStorage с mutex.
 type MemStorage struct {
 	metrics map[string]models.Metrics
 	mu      sync.RWMutex
 }
 
+// NewMemStorage создаёт пустое in-memory хранилище метрик.
 func NewMemStorage() MetricsStorage {
 	return &MemStorage{
 		metrics: make(map[string]models.Metrics),
@@ -50,7 +53,7 @@ func (m *MemStorage) UpdateCounter(ctx context.Context, metric models.Metrics) e
 }
 
 func (m *MemStorage) key(mName, mType string) string {
-	return fmt.Sprintf("%s:%s", mName, mType)
+	return mName + ":" + mType
 }
 
 func (m *MemStorage) exists(key string) bool {

@@ -6,10 +6,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/hasher"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
-	"net/http"
 )
 
 const (
@@ -18,11 +19,13 @@ const (
 	jsonType    = "application/json"
 )
 
+// MetricsSender отправляет метрики на сервер по HTTP (в т.ч. gzip, batch).
 type MetricsSender struct {
 	cfg    *config.Config
 	client *RetryableClient
 }
 
+// NewMetricsSender создаёт отправитель метрик
 func NewMetricsSender(cfg *config.Config) *MetricsSender {
 	return &MetricsSender{
 		client: NewRetryableClient(),

@@ -1,20 +1,22 @@
 package internal
 
 import (
+	"net/http"
+	"path/filepath"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/handler"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"net/http"
-	"path/filepath"
 )
 
+// SetupRouter регистрирует маршруты API метрик и middleware.
 func SetupRouter(metricsHandler handler.MetricsHandler, metricsJSONHandler handler.MetricsHandler, pool *pgxpool.Pool) http.Handler {
 	router := gin.New()
 
 	router.Use(gin.Recovery())
 
-	router.Use(middleware.Logger(), middleware.Compress())
+	router.Use(middleware.Logger(), middleware.Compress(), middleware.ClientIP())
 
 	if files, err := filepath.Glob("templates/*"); err == nil && len(files) > 0 {
 		router.LoadHTMLGlob("templates/*")

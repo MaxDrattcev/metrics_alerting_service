@@ -3,12 +3,15 @@ package db
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"time"
 )
 
+// NewConDB создаёт пул PostgreSQL и выполняет миграции, если задан DatabaseDSN.
+// При пустом DSN возвращает nil без ошибки.
 func NewConDB(ctx context.Context, cfg config.Config, pathMigration string) (*pgxpool.Pool, error) {
 	var pool *pgxpool.Pool
 	if cfg.Server.DatabaseDSN != "" {

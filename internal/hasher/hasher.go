@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 )
 
+// ComputeHashSHA256 вычисляет HMAC-SHA256 от тела запроса с ключом key (hex).
 func ComputeHashSHA256(bodyBytes []byte, key string) (string, error) {
 	mac := hmac.New(sha256.New, []byte(key))
 	_, err := mac.Write(bodyBytes)

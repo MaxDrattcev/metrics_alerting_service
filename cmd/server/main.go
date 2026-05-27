@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"time"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config/db"
@@ -10,9 +16,6 @@ import (
 	"github.com/bytedance/gopkg/util/logger"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"log"
-	"os"
-	"time"
 )
 
 func main() {
@@ -34,6 +37,8 @@ func main() {
 		Restore:         envVar.Restore,
 		DatabaseDSN:     envVar.DatabaseDSN,
 		Key:             envVar.Key,
+		AuditFile:       envVar.AuditFile,
+		AuditURL:        envVar.AuditURL,
 	}
 	if server.Address == "" {
 		server.Address = flags.Address
@@ -53,6 +58,12 @@ func main() {
 	if server.Key == "" {
 		server.Key = flags.Key
 	}
+	if server.AuditFile == "" {
+		server.AuditFile = flags.AuditFile
+	}
+	if server.AuditURL == "" {
+		server.AuditURL = flags.AuditURL
+	}
 	cfg := &config.Config{Server: server}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -66,6 +77,17 @@ func main() {
 		defer pool.Close()
 	}
 	app := internal.NewApp(cfg, pool)
+
+	defer func() {
+		if err := app.Close(); err != nil {
+			log.Printf("app close: %v", err)
+		}
+	}()
+
+	go func() {
+		log.Println("pprof on http://localhost:6060/debug/pprof/")
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 
 	if err := app.Run(); err != nil {
 		log.Fatalf("Failed to run app: %v", err)

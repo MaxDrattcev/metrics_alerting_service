@@ -2,9 +2,11 @@ package environmentvar
 
 import (
 	"fmt"
+
 	"github.com/caarlos0/env/v6"
 )
 
+// EnvVar — переменные окружения сервера и агента.
 type EnvVar struct {
 	Address         string `env:"ADDRESS"`
 	ReportInterval  int64  `env:"REPORT_INTERVAL"`
@@ -15,8 +17,11 @@ type EnvVar struct {
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 	Key             string `env:"KEY"`
 	RateLimit       int    `env:"RATE_LIMIT"`
+	AuditFile       string `env:"AUDIT_FILE"`
+	AuditURL        string `env:"AUDIT_URL"`
 }
 
+// LoadEnvVar парсит переменные окружения в структуру EnvVar.
 func LoadEnvVar() (EnvVar, error) {
 	var envVar EnvVar
 	err := env.Parse(&envVar)

@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// CheckUnknownFlags возвращает ошибку, если переданы неизвестные флаги командной строки.
 func CheckUnknownFlags() error {
 	knownFlags := make(map[string]bool)
 	flag.VisitAll(func(f *flag.Flag) {

@@ -1,10 +1,11 @@
 package repository
 
 import (
+	"testing"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func floatPtr(v float64) *float64 {

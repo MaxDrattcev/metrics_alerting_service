@@ -2,13 +2,15 @@ package agent
 
 import (
 	"context"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
 
+// Agent координирует сбор и отправку метрик по таймерам.
 type Agent struct {
 	collector *MetricsCollector
 	sender    *MetricsSender
@@ -17,6 +19,7 @@ type Agent struct {
 	wg        sync.WaitGroup
 }
 
+// NewAgent создаёт агента с конфигурацией клиента.
 func NewAgent(cfg *config.Config) *Agent {
 	return &Agent{
 		collector: NewMetricsCollector(),
@@ -26,6 +29,8 @@ func NewAgent(cfg *config.Config) *Agent {
 	}
 }
 
+// Start запускает сбор метрик по PollInterval, периодическую отправку
+// снимка по ReportInterval и пул воркеров (RateLimit). Завершение — по отмене ctx.
 func (a *Agent) Start(ctx context.Context) {
 	a.startWorkers(ctx, a.cfg.Client.RateLimit)
 	go a.startCollecting(ctx)

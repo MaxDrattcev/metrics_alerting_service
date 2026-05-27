@@ -2,12 +2,13 @@ package scheduler
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 type mockMetricsService struct {

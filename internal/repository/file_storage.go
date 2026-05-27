@@ -3,9 +3,10 @@ package repository
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"os"
 	"sync"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
 
 type fileStorage struct {
@@ -13,6 +14,7 @@ type fileStorage struct {
 	mu   sync.Mutex
 }
 
+// NewFileStorage создаёт FileStorage с записью в указанный путь к JSON-файлу.
 func NewFileStorage(path string) FileStorage {
 	return &fileStorage{
 		path: path,

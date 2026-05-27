@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/agent"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
-	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/agent"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 )
 
 func main() {

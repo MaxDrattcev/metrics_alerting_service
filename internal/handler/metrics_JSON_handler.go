@@ -2,15 +2,16 @@ package handler
 
 import (
 	"encoding/json"
+	"io"
+	"log"
+	"net/http"
+	"strconv"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/hasher"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/service"
 	"github.com/gin-gonic/gin"
-	"io"
-	"log"
-	"net/http"
-	"strconv"
 )
 
 type metricsJSONHandler struct {
@@ -18,6 +19,7 @@ type metricsJSONHandler struct {
 	cfg     *config.Config
 }
 
+// NewMetricsJSONHandler создаёт обработчик JSON API (/update, /updates, /value).
 func NewMetricsJSONHandler(service service.MetricsService, cfg *config.Config) MetricsHandler {
 	return &metricsJSONHandler{
 		service: service,

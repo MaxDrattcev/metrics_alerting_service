@@ -1,9 +1,10 @@
 package middleware
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"time"
 )
 
 var log *zap.Logger
@@ -16,6 +17,7 @@ func init() {
 	}
 }
 
+// Logger логирует метод, URI, статус и длительность каждого запроса.
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()

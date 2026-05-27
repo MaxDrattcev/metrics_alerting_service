@@ -1,13 +1,14 @@
 package internal
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestNewApp(t *testing.T) {
