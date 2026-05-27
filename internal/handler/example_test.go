@@ -25,7 +25,7 @@ func init() {
 func exampleServer() *httptest.Server {
 	dir, err := os.MkdirTemp("", "metrics-example-*")
 	if err != nil {
-		panic(err)
+		return nil
 	}
 
 	storeInterval := int64(300)
@@ -63,6 +63,9 @@ func exampleServer() *httptest.Server {
 // ExampleNewMetricsHandler_updateGauge — POST /update/{type}/{name}/{value} (текстовый API).
 func ExampleNewMetricsHandler_updateGauge() {
 	ts := exampleServer()
+	if ts == nil {
+		return
+	}
 	defer ts.Close()
 
 	resp, err := http.Post(
@@ -71,7 +74,7 @@ func ExampleNewMetricsHandler_updateGauge() {
 		http.NoBody,
 	)
 	if err != nil {
-		panic(err)
+		return
 	}
 	defer resp.Body.Close()
 
@@ -86,17 +89,20 @@ func ExampleNewMetricsHandler_updateGauge() {
 // ExampleNewMetricsHandler_getGauge — GET /value/{type}/{name} (текстовый API).
 func ExampleNewMetricsHandler_getGauge() {
 	ts := exampleServer()
+	if ts == nil {
+		return
+	}
 	defer ts.Close()
 
 	setupResp, err := http.Post(ts.URL+"/update/gauge/Alloc/27", "text/plain", http.NoBody)
 	if err != nil {
-		panic(err)
+		return
 	}
 	setupResp.Body.Close()
 
 	resp, err := http.Get(ts.URL + "/value/gauge/Alloc")
 	if err != nil {
-		panic(err)
+		return
 	}
 	defer resp.Body.Close()
 
@@ -111,6 +117,9 @@ func ExampleNewMetricsHandler_getGauge() {
 // ExampleNewMetricsJSONHandler_update — POST /update (JSON, одна метрика).
 func ExampleNewMetricsJSONHandler_update() {
 	ts := exampleServer()
+	if ts == nil {
+		return
+	}
 	defer ts.Close()
 
 	value := 42.5
@@ -120,18 +129,18 @@ func ExampleNewMetricsJSONHandler_update() {
 		Value: &value,
 	})
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	req, err := http.NewRequest(http.MethodPost, ts.URL+"/update/", bytes.NewReader(payload))
 	if err != nil {
-		panic(err)
+		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		panic(err)
+		return
 	}
 	defer resp.Body.Close()
 
@@ -146,6 +155,9 @@ func ExampleNewMetricsJSONHandler_update() {
 // ExampleNewMetricsJSONHandler_getValue — POST /value (JSON: запрос и ответ с актуальным значением).
 func ExampleNewMetricsJSONHandler_getValue() {
 	ts := exampleServer()
+	if ts == nil {
+		return
+	}
 	defer ts.Close()
 
 	value := 42.5
@@ -155,18 +167,18 @@ func ExampleNewMetricsJSONHandler_getValue() {
 		Value: &value,
 	})
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	reqUpdate, err := http.NewRequest(http.MethodPost, ts.URL+"/update/", bytes.NewReader(updateBody))
 	if err != nil {
-		panic(err)
+		return
 	}
 	reqUpdate.Header.Set("Content-Type", "application/json")
 
 	updateResp, err := http.DefaultClient.Do(reqUpdate)
 	if err != nil {
-		panic(err)
+		return
 	}
 	updateResp.Body.Close()
 
@@ -175,18 +187,18 @@ func ExampleNewMetricsJSONHandler_getValue() {
 		MType: models.Gauge,
 	})
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	req, err := http.NewRequest(http.MethodPost, ts.URL+"/value/", bytes.NewReader(getBody))
 	if err != nil {
-		panic(err)
+		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		panic(err)
+		return
 	}
 	defer resp.Body.Close()
 
@@ -201,6 +213,9 @@ func ExampleNewMetricsJSONHandler_getValue() {
 // ExampleNewMetricsJSONHandler_updates — POST /updates (пакет метрик).
 func ExampleNewMetricsJSONHandler_updates() {
 	ts := exampleServer()
+	if ts == nil {
+		return
+	}
 	defer ts.Close()
 
 	v1, v2 := 1.0, 2.0
@@ -210,18 +225,18 @@ func ExampleNewMetricsJSONHandler_updates() {
 	}
 	payload, err := json.Marshal(metrics)
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	req, err := http.NewRequest(http.MethodPost, ts.URL+"/updates/", bytes.NewReader(payload))
 	if err != nil {
-		panic(err)
+		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		panic(err)
+		return
 	}
 	defer resp.Body.Close()
 
@@ -236,6 +251,9 @@ func ExampleNewMetricsJSONHandler_updates() {
 // ExampleNewMetricsJSONHandler_getAllMetrics — GET /metrics (все метрики в JSON).
 func ExampleNewMetricsJSONHandler_getAllMetrics() {
 	ts := exampleServer()
+	if ts == nil {
+		return
+	}
 	defer ts.Close()
 
 	value := 10.0
@@ -245,24 +263,24 @@ func ExampleNewMetricsJSONHandler_getAllMetrics() {
 		Value: &value,
 	})
 	if err != nil {
-		panic(err)
+		return
 	}
 
 	req, err := http.NewRequest(http.MethodPost, ts.URL+"/update/", bytes.NewReader(payload))
 	if err != nil {
-		panic(err)
+		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	updateResp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		panic(err)
+		return
 	}
 	updateResp.Body.Close()
 
 	resp, err := http.Get(ts.URL + "/metrics")
 	if err != nil {
-		panic(err)
+		return
 	}
 	defer resp.Body.Close()
 
