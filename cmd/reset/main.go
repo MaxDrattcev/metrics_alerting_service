@@ -199,9 +199,6 @@ func writeResetMethod(buf *bytes.Buffer, typeName string, strct *types.Struct, i
 
 	for i := 0; i < strct.NumFields(); i++ {
 		field := strct.Field(i)
-		if !field.Exported() && !field.Anonymous() {
-			// неэкспортируемые поля в том же пакете доступны
-		}
 		access := fmt.Sprintf("%s.%s", recv, fieldName(field))
 		lines := resetStmts(field.Type(), access, info)
 		for _, line := range lines {
