@@ -14,6 +14,8 @@ import (
 )
 
 func main() {
+	printBuildInfo()
+
 	envVar, err := environmentvar.LoadEnvVar()
 	if err != nil {
 		log.Printf("Warning: invalid environment variables, using flags/defaults: %v", err)

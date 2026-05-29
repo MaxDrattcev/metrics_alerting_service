@@ -19,6 +19,7 @@ import (
 )
 
 func main() {
+	printBuildInfo()
 
 	envVar, err := environmentvar.LoadEnvVar()
 	if err != nil {
