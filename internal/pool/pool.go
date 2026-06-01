@@ -11,13 +11,12 @@ type Resetter interface {
 // Перед возвратом в пул вызывается Reset().
 type Pool[T Resetter] struct {
 	pool sync.Pool
-	new  func() T
 }
 
 // New создаёт пул объектов типа T.
-// newFunc вызывается, когда в пуле нет свободного объекта.
+// newFunc вызывается sync.Pool, когда в пуле нет свободного объекта.
 func New[T Resetter](newFunc func() T) *Pool[T] {
-	p := &Pool[T]{new: newFunc}
+	p := &Pool[T]{}
 	p.pool = sync.Pool{
 		New: func() any {
 			return newFunc()
@@ -26,13 +25,9 @@ func New[T Resetter](newFunc func() T) *Pool[T] {
 	return p
 }
 
-// Get возвращает объект из пула или новый через newFunc.
+// Get возвращает объект из пула (при пустом пуле sync.Pool вызывает New).
 func (p *Pool[T]) Get() T {
-	v := p.pool.Get()
-	if v == nil {
-		return p.new()
-	}
-	return v.(T)
+	return p.pool.Get().(T)
 }
 
 // Put сбрасывает состояние объекта и возвращает его в пул.

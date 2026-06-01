@@ -1,6 +1,6 @@
 module github.com/MaxDrattcev/metrics_alerting_service
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/bytedance/gopkg v0.1.3

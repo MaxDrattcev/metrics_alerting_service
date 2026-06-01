@@ -8,13 +8,15 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/buildinfo"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/agent"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/environmentvar"
 )
 
 func main() {
-	printBuildInfo()
+	buildinfo.Print()
 
 	envVar, err := environmentvar.LoadEnvVar()
 	if err != nil {
