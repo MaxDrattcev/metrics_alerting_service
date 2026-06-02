@@ -61,8 +61,7 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 // Run запускает HTTP-сервер на адресе из конфигурации.
 func (a *App) Run() error {
 	log.Printf("Server starting on %s", a.config.Server.Address)
-	log.Fatal(http.ListenAndServe(a.config.Server.Address, a.router))
-	return nil
+	return http.ListenAndServe(a.config.Server.Address, a.router)
 }
 
 func (a *App) Close() error {

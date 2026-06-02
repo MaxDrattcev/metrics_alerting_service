@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/buildinfo"
+
 	"github.com/MaxDrattcev/metrics_alerting_service/internal"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config/db"
@@ -19,6 +21,7 @@ import (
 )
 
 func main() {
+	buildinfo.Print()
 
 	envVar, err := environmentvar.LoadEnvVar()
 	if err != nil {

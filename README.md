@@ -43,6 +43,47 @@ git fetch template && git checkout template/v2 .github
 - **Hexagonal Architecture**
 - **Layered Architecture**
 
+## Сборка с метаданными (build info)
+
+При старте **агент** (`cmd/agent`) и **сервер** (`cmd/server`) выводят в stdout:
+
+```text
+Build version: ...
+Build date: ...
+Build commit: ...
+```
+
+Значения задаются в пакете `internal/buildinfo`. По умолчанию для всех полей используется `N/A`. При компиляции их можно переопределить через `-ldflags` и флаг линковщика `-X`:
+
+```bash
+MODULE=github.com/MaxDrattcev/metrics_alerting_service
+LDFLAGS="-X ${MODULE}/internal/buildinfo.BuildVersion=v1.2.3 \
+  -X ${MODULE}/internal/buildinfo.BuildDate=2025-05-31 \
+  -X ${MODULE}/internal/buildinfo.BuildCommit=abc1234"
+
+go build -ldflags "${LDFLAGS}" -o agent ./cmd/agent
+go build -ldflags "${LDFLAGS}" -o server ./cmd/server
+```
+
+Пример с подстановкой даты и коммита из git:
+
+```bash
+go build -ldflags "\
+  -X ${MODULE}/internal/buildinfo.BuildVersion=v1.0.0 \
+  -X ${MODULE}/internal/buildinfo.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%S) \
+  -X ${MODULE}/internal/buildinfo.BuildCommit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" \
+  -o server ./cmd/server
+```
+
+Проверка:
+
+```bash
+./server
+./agent
+```
+
+Без `-ldflags` в выводе останется `N/A` для всех полей.
+
 ## Benchmarks
 
 Бенчмарки измеряют скорость важнейших компонентов сервиса сбора метрик: in-memory хранилище (`MemStorage`), слой `service` и обработку JSON в `handler` (путь `POST /updates`).
