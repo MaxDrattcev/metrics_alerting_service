@@ -24,6 +24,7 @@ type ServerConfig struct {
 	Key             string `yaml:"key"`
 	AuditFile       string `yaml:"auditFile"`
 	AuditURL        string `yaml:"auditUrl"`
+	CryptoKey       string `yaml:"cryptoKey"`
 }
 
 // ClientConfig — параметры агента (адрес сервера, интервалы, ключ).
@@ -33,6 +34,7 @@ type ClientConfig struct {
 	ReportInterval int64  `yaml:"reportInterval"`
 	Key            string `yaml:"key"`
 	RateLimit      int    `yaml:"rateLimit"`
+	CryptoKey      string `yaml:"cryptoKey"`
 }
 
 // GetStoreInterval возвращает интервал сохранения метрик в файл.

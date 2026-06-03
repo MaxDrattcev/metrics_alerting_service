@@ -15,6 +15,7 @@ type ServerFlags struct {
 	Key             string
 	AuditFile       string
 	AuditURL        string
+	CryptoKey       string
 }
 
 func parseServerFlags() (*ServerFlags, error) {
@@ -27,6 +28,7 @@ func parseServerFlags() (*ServerFlags, error) {
 		key             = flag.String("k", "", "Ключ")
 		auditFile       = flag.String("audit-file", "", "путь к файлу с логами аудита")
 		auditURL        = flag.String("audit-url", "", "полный url по которому отправляются логи аудита")
+		cryptoKey       = flag.String("crypto-key", "keys/server_private.pem", "путь к файлу с приватным ключом")
 	)
 
 	flag.Parse()
@@ -44,5 +46,6 @@ func parseServerFlags() (*ServerFlags, error) {
 		Key:             *key,
 		AuditFile:       *auditFile,
 		AuditURL:        *auditURL,
+		CryptoKey:       *cryptoKey,
 	}, nil
 }

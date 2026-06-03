@@ -90,7 +90,8 @@ func TestMetricsSender_SendGauge(t *testing.T) {
 				},
 			}
 
-			sender := NewMetricsSender(cfg)
+			sender, err := NewMetricsSender(cfg)
+			require.NoError(t, err)
 			err = sender.SendGauge(tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
@@ -177,7 +178,8 @@ func TestMetricsSender_SendCounter(t *testing.T) {
 				},
 			}
 
-			sender := NewMetricsSender(cfg)
+			sender, err := NewMetricsSender(cfg)
+			require.NoError(t, err)
 			err = sender.SendCounter(tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
@@ -196,8 +198,9 @@ func TestMetricsSender_SendGauge_InvalidURL(t *testing.T) {
 		},
 	}
 
-	sender := NewMetricsSender(cfg)
-	err := sender.SendGauge("testGauge", 123.45)
+	sender, err := NewMetricsSender(cfg)
+	require.NoError(t, err)
+	err = sender.SendGauge("testGauge", 123.45)
 
 	require.Error(t, err, "Should return error for invalid URL")
 }
@@ -209,8 +212,9 @@ func TestMetricsSender_SendCounter_InvalidURL(t *testing.T) {
 		},
 	}
 
-	sender := NewMetricsSender(cfg)
-	err := sender.SendCounter("testCounter", 5)
+	sender, err := NewMetricsSender(cfg)
+	require.NoError(t, err)
+	err = sender.SendCounter("testCounter", 5)
 
 	require.Error(t, err, "Should return error for invalid URL")
 }
@@ -309,7 +313,8 @@ func TestMetricsSender_sendGaugeJSON(t *testing.T) {
 				},
 			}
 
-			sender := NewMetricsSender(cfg)
+			sender, err := NewMetricsSender(cfg)
+			require.NoError(t, err)
 			err = sender.SendGaugeJSON(t.Context(), tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
@@ -327,8 +332,9 @@ func TestMetricsSender_sendGaugeJSON_InvalidURL(t *testing.T) {
 			Address: "invalid-host:9999",
 		},
 	}
-	sender := NewMetricsSender(cfg)
-	err := sender.SendGaugeJSON(t.Context(), "testGauge", 123.45)
+	sender, err := NewMetricsSender(cfg)
+	require.NoError(t, err)
+	err = sender.SendGaugeJSON(t.Context(), "testGauge", 123.45)
 	require.Error(t, err)
 }
 
@@ -441,7 +447,8 @@ func TestMetricsSender_sendCounterJSON(t *testing.T) {
 				},
 			}
 
-			sender := NewMetricsSender(cfg)
+			sender, err := NewMetricsSender(cfg)
+			require.NoError(t, err)
 			err = sender.SendCounterJSON(t.Context(), tt.metricName, tt.metricValue)
 
 			if tt.wantErr {
@@ -470,7 +477,8 @@ func TestMetricsSender_sendCounterJSON_InvalidURL(t *testing.T) {
 			Address: "invalid-host:9999",
 		},
 	}
-	sender := NewMetricsSender(cfg)
-	err := sender.SendCounterJSON(t.Context(), "testCounter", 5)
+	sender, err := NewMetricsSender(cfg)
+	require.NoError(t, err)
+	err = sender.SendCounterJSON(t.Context(), "testCounter", 5)
 	require.Error(t, err)
 }

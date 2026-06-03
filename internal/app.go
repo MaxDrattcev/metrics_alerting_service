@@ -48,7 +48,7 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	metricsHandler := handler.NewMetricsHandler(metricsService)
 	metricsJSONHandler := handler.NewMetricsJSONHandler(metricsService, cfg)
 
-	router := SetupRouter(metricsHandler, metricsJSONHandler, pool)
+	router := SetupRouter(metricsHandler, metricsJSONHandler, pool, cfg)
 
 	return &App{
 		handler:  metricsHandler,

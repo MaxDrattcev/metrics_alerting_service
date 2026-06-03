@@ -20,13 +20,17 @@ type Agent struct {
 }
 
 // NewAgent создаёт агента с конфигурацией клиента.
-func NewAgent(cfg *config.Config) *Agent {
+func NewAgent(cfg *config.Config) (*Agent, error) {
+	sender, err := NewMetricsSender(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &Agent{
 		collector: NewMetricsCollector(),
-		sender:    NewMetricsSender(cfg),
+		sender:    sender,
 		cfg:       cfg,
 		jobs:      make(chan []models.Metrics, 3),
-	}
+	}, nil
 }
 
 // Start запускает сбор метрик по PollInterval, периодическую отправку

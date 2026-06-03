@@ -42,6 +42,7 @@ func main() {
 		Key:             envVar.Key,
 		AuditFile:       envVar.AuditFile,
 		AuditURL:        envVar.AuditURL,
+		CryptoKey:       envVar.CryptoKeyServer,
 	}
 	if server.Address == "" {
 		server.Address = flags.Address
@@ -67,7 +68,12 @@ func main() {
 	if server.AuditURL == "" {
 		server.AuditURL = flags.AuditURL
 	}
+	if server.CryptoKey == "" {
+		server.CryptoKey = flags.CryptoKey
+	}
 	cfg := &config.Config{Server: server}
+
+	log.Printf("server crypto-key: %q", cfg.Server.CryptoKey)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

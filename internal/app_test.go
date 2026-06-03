@@ -33,17 +33,17 @@ func TestNewApp(t *testing.T) {
 
 func TestSetupRouter(t *testing.T) {
 	mockHandler := &mockMetricsHandler{}
-
-	router := SetupRouter(mockHandler, mockHandler, nil)
-
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			CryptoKey: "",
+		},
+	}
+	router := SetupRouter(mockHandler, mockHandler, nil, cfg)
 	require.NotNil(t, router)
-
 	req := httptest.NewRequest(http.MethodPost, "/update/gauge/test/123.45", nil)
 	req.Header.Set("Content-Type", "text/plain")
 	w := httptest.NewRecorder()
-
 	router.ServeHTTP(w, req)
-
 	assert.True(t, mockHandler.called)
 }
 

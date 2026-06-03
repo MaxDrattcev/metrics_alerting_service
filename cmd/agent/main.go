@@ -33,6 +33,7 @@ func main() {
 		PollInterval:   envVar.PollInterval,
 		Key:            envVar.Key,
 		RateLimit:      envVar.RateLimit,
+		CryptoKey:      envVar.CryptoKeyAgent,
 	}
 	if client.Address == "" {
 		client.Address = flags.Address
@@ -49,12 +50,20 @@ func main() {
 	if client.RateLimit == 0 {
 		client.RateLimit = flags.RateLimit
 	}
+	if client.CryptoKey == "" {
+		client.CryptoKey = flags.CryptoKey
+	}
 	cfg := &config.Config{Client: client}
+
+	log.Printf("agent crypto-key: %q", cfg.Client.CryptoKey)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	agt := agent.NewAgent(cfg)
+	agt, err := agent.NewAgent(cfg)
+	if err != nil {
+		log.Fatalf("create agent: %v", err)
+	}
 	agt.Start(ctx)
 
 	stop := make(chan os.Signal, 1)
