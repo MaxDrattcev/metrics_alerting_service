@@ -13,17 +13,21 @@ type AgentFlags struct {
 	Key            string
 	RateLimit      int
 	CryptoKey      string
+	Config         string
 }
 
 func parseAgentFlags() (*AgentFlags, error) {
 	var (
-		address        = flag.String("a", "localhost:8080", "адрес и порт запуска HTTP-сервера")
-		reportInterval = flag.Int("r", 10, "частота отправки метрик на сервер (в секундах)")
-		pollInterval   = flag.Int("p", 2, "частота опроса метрик из пакета runtime (в секундах)")
+		address        = flag.String("a", "", "адрес и порт запуска HTTP-сервера")
+		reportInterval = flag.Int("r", 0, "частота отправки метрик на сервер (в секундах)")
+		pollInterval   = flag.Int("p", 0, "частота опроса метрик из пакета runtime (в секундах)")
 		key            = flag.String("k", "", "Ключ")
-		rateLimit      = flag.Int("l", 10, "количество одновременно исходящих запросов")
-		cryptoKey      = flag.String("crypto-key", "keys/agent_public.pem", "путь к файлу с публичным ключом")
+		rateLimit      = flag.Int("l", 0, "количество одновременно исходящих запросов")
+		cryptoKey      = flag.String("crypto-key", "", "путь к файлу с публичным ключом")
+		config         string
 	)
+	flag.StringVar(&config, "config", "config.json", "имя файла конфигурации")
+	flag.StringVar(&config, "c", "config.json", "имя файла конфигурации")
 
 	flag.Parse()
 
@@ -38,5 +42,6 @@ func parseAgentFlags() (*AgentFlags, error) {
 		Key:            *key,
 		RateLimit:      *rateLimit,
 		CryptoKey:      *cryptoKey,
+		Config:         config,
 	}, nil
 }

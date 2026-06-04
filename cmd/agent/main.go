@@ -27,35 +27,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
-	var client = config.ClientConfig{
-		Address:        envVar.Address,
-		ReportInterval: envVar.ReportInterval,
-		PollInterval:   envVar.PollInterval,
-		Key:            envVar.Key,
-		RateLimit:      envVar.RateLimit,
-		CryptoKey:      envVar.CryptoKeyAgent,
-	}
-	if client.Address == "" {
-		client.Address = flags.Address
-	}
-	if client.ReportInterval == 0 {
-		client.ReportInterval = flags.ReportInterval
-	}
-	if client.PollInterval == 0 {
-		client.PollInterval = flags.PollInterval
-	}
-	if client.Key == "" {
-		client.Key = flags.Key
-	}
-	if client.RateLimit == 0 {
-		client.RateLimit = flags.RateLimit
-	}
-	if client.CryptoKey == "" {
-		client.CryptoKey = flags.CryptoKey
-	}
-	cfg := &config.Config{Client: client}
 
-	log.Printf("agent crypto-key: %q", cfg.Client.CryptoKey)
+	cfg, err := initConfig(envVar, *flags)
+	if err != nil {
+		log.Fatalf("Error: %v\n", err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -72,4 +48,59 @@ func main() {
 
 	log.Println("Shutting down agent...")
 	cancel()
+}
+
+func initConfig(envVar environmentvar.EnvVar, flags AgentFlags) (*config.Config, error) {
+	var cfg *config.Config
+	var err error
+	configPath := envVar.ConfigAgent
+	if configPath == "" {
+		configPath = flags.Config
+	}
+	if configPath != "" {
+		cfg, err = config.LoadConfigJSON(configPath)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		cfg = &config.Config{}
+	}
+	if flags.Address != "" {
+		cfg.Client.Address = flags.Address
+	}
+	if flags.ReportInterval != 0 {
+		cfg.Client.ReportInterval = flags.ReportInterval
+	}
+	if flags.PollInterval != 0 {
+		cfg.Client.PollInterval = flags.PollInterval
+	}
+	if flags.Key != "" {
+		cfg.Client.Key = flags.Key
+	}
+	if flags.RateLimit != 0 {
+		cfg.Client.RateLimit = flags.RateLimit
+	}
+	if flags.CryptoKey != "" {
+		cfg.Client.CryptoKey = flags.CryptoKey
+	}
+
+	if envVar.Address != "" {
+		cfg.Client.Address = envVar.Address
+	}
+	if envVar.ReportInterval != 0 {
+		cfg.Client.ReportInterval = envVar.ReportInterval
+	}
+	if envVar.PollInterval != 0 {
+		cfg.Client.PollInterval = envVar.PollInterval
+	}
+	if envVar.Key != "" {
+		cfg.Client.Key = envVar.Key
+	}
+	if envVar.RateLimit != 0 {
+		cfg.Client.RateLimit = envVar.RateLimit
+	}
+	if envVar.CryptoKeyAgent != "" {
+		cfg.Client.CryptoKey = envVar.CryptoKeyAgent
+	}
+	return cfg, nil
 }
