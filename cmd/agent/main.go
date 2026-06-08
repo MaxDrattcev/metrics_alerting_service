@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/buildinfo"
 
@@ -43,11 +44,18 @@ func main() {
 	agt.Start(ctx)
 
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-stop
 
 	log.Println("Shutting down agent...")
 	cancel()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer shutdownCancel()
+
+	if err := agt.Shutdown(shutdownCtx); err != nil {
+		log.Printf("agent shutdown: %v", err)
+	}
 }
 
 func initConfig(envVar environmentvar.EnvVar, flags AgentFlags) (*config.Config, error) {

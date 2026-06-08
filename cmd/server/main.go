@@ -7,6 +7,8 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/buildinfo"
@@ -22,12 +24,10 @@ import (
 
 func main() {
 	buildinfo.Print()
-
 	envVar, err := environmentvar.LoadEnvVar()
 	if err != nil {
 		logger.Info(err)
 	}
-
 	flags, err := parseServerFlags()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -37,32 +37,33 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
 	pool, err := db.NewConDB(ctx, *cfg, "file://migrations")
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
-	if pool != nil {
-		defer pool.Close()
-	}
 	app := internal.NewApp(cfg, pool)
-
-	defer func() {
-		if err := app.Close(); err != nil {
-			log.Printf("app close: %v", err)
-		}
-	}()
-
 	go func() {
 		log.Println("pprof on http://localhost:6060/debug/pprof/")
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
-
-	if err := app.Run(); err != nil {
-		log.Fatalf("Failed to run app: %v", err)
+	go func() {
+		if err := app.Run(); err != nil {
+			log.Fatalf("Failed to run app: %v", err)
+		}
+	}()
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	<-quit
+	log.Println("Shutting down server...")
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+	if err := app.Shutdown(shutdownCtx); err != nil {
+		log.Printf("server shutdown: %v", err)
+	}
+	if pool != nil {
+		pool.Close()
 	}
 }
 
