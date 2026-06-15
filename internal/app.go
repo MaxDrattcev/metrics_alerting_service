@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -17,10 +18,13 @@ import (
 
 // App — точка входа HTTP-приложения: роутер и конфигурация.
 type App struct {
-	handler  handler.MetricsHandler
-	router   http.Handler
-	config   *config.Config
-	auditPub *audit.Publisher
+	handler         handler.MetricsHandler
+	router          http.Handler
+	config          *config.Config
+	auditPub        *audit.Publisher
+	httpServer      *http.Server
+	fileService     service.FileService
+	schedulerCancel context.CancelFunc
 }
 
 // NewApp инициализирует хранилище, сервисы, handlers и HTTP-роутер.
@@ -43,25 +47,50 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 		log.Printf("load metrics from file: %v", err)
 	}
 	metricsScheduler := scheduler.NewMetricsScheduler(cfg, fileService)
-	go metricsScheduler.RunWriteMetricsFile(context.Background())
+	schedCtx, schedulerCancel := context.WithCancel(context.Background())
+	go metricsScheduler.RunWriteMetricsFile(schedCtx)
 
 	metricsHandler := handler.NewMetricsHandler(metricsService)
 	metricsJSONHandler := handler.NewMetricsJSONHandler(metricsService, cfg)
 
-	router := SetupRouter(metricsHandler, metricsJSONHandler, pool)
+	router := SetupRouter(metricsHandler, metricsJSONHandler, pool, cfg)
 
 	return &App{
-		handler:  metricsHandler,
-		router:   router,
-		config:   cfg,
-		auditPub: auditPub,
+		handler:         metricsHandler,
+		router:          router,
+		config:          cfg,
+		auditPub:        auditPub,
+		fileService:     fileService,
+		schedulerCancel: schedulerCancel,
+		httpServer: &http.Server{
+			Addr:    cfg.Server.Address,
+			Handler: router,
+		},
 	}
 }
 
 // Run запускает HTTP-сервер на адресе из конфигурации.
 func (a *App) Run() error {
 	log.Printf("Server starting on %s", a.config.Server.Address)
-	return http.ListenAndServe(a.config.Server.Address, a.router)
+	err := a.httpServer.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
+}
+func (a *App) Shutdown(ctx context.Context) error {
+	if a.schedulerCancel != nil {
+		a.schedulerCancel()
+	}
+	if err := a.httpServer.Shutdown(ctx); err != nil {
+		return err
+	}
+	if a.fileService != nil {
+		if err := a.fileService.WriteMetricsFile(ctx); err != nil {
+			return err
+		}
+	}
+	return a.Close()
 }
 
 func (a *App) Close() error {

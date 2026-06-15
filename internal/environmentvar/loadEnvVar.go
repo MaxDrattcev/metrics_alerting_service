@@ -19,6 +19,10 @@ type EnvVar struct {
 	RateLimit       int    `env:"RATE_LIMIT"`
 	AuditFile       string `env:"AUDIT_FILE"`
 	AuditURL        string `env:"AUDIT_URL"`
+	CryptoKeyAgent  string `env:"CRYPTO_KEY_AGENT"`
+	CryptoKeyServer string `env:"CRYPTO_KEY_SERVER"`
+	ConfigAgent     string `env:"CONFIG_AGENT"`
+	ConfigServer    string `env:"CONFIG_SERVER"`
 }
 
 // LoadEnvVar парсит переменные окружения в структуру EnvVar.

@@ -1,0 +1,21 @@
+{
+  "server": {
+    "address": "localhost:8080",
+    "store_interval": 300,
+    "store_file": "metrics.json",
+    "restore": true,
+    "database_dsn": "",
+    "key": "",
+    "audit_file": "",
+    "audit_url": "",
+    "crypto_key": "keys/server_private.pem"
+  },
+  "client": {
+    "address": "localhost:8080",
+    "report_interval": 10,
+    "poll_interval": 2,
+    "key": "",
+    "rate_limit": 10,
+    "crypto_key": "keys/agent_public.pem"
+  }
+}

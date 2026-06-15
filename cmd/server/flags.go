@@ -15,19 +15,25 @@ type ServerFlags struct {
 	Key             string
 	AuditFile       string
 	AuditURL        string
+	CryptoKey       string
+	Config          string
 }
 
 func parseServerFlags() (*ServerFlags, error) {
 	var (
-		address         = flag.String("a", "localhost:8080", "адрес и порт сервера")
-		storeInterval   = flag.Int("i", 300, "периодичность сохранения метрик в файл")
-		fileStoragePath = flag.String("f", "metrics.json", "путь до файла")
+		address         = flag.String("a", "", "адрес и порт сервера")
+		storeInterval   = flag.Int("i", 0, "периодичность сохранения метрик в файл")
+		fileStoragePath = flag.String("f", "", "путь до файла")
 		restore         = flag.Bool("r", false, "загружать данные из файла при старте сервера")
 		dataBaseDSN     = flag.String("d", "", "строка адреса подключения")
 		key             = flag.String("k", "", "Ключ")
 		auditFile       = flag.String("audit-file", "", "путь к файлу с логами аудита")
 		auditURL        = flag.String("audit-url", "", "полный url по которому отправляются логи аудита")
+		cryptoKey       = flag.String("crypto-key", "", "путь к файлу с приватным ключом")
+		config          string
 	)
+	flag.StringVar(&config, "config", "config.json", "имя файла конфигурации")
+	flag.StringVar(&config, "c", "config.json", "имя файла конфигурации")
 
 	flag.Parse()
 
@@ -44,5 +50,7 @@ func parseServerFlags() (*ServerFlags, error) {
 		Key:             *key,
 		AuditFile:       *auditFile,
 		AuditURL:        *auditURL,
+		CryptoKey:       *cryptoKey,
+		Config:          config,
 	}, nil
 }

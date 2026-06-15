@@ -495,3 +495,28 @@ func TestMemStorage_GetAllMetrics(t *testing.T) {
 		})
 	}
 }
+
+func TestMemStorage_UpdateMetrics(t *testing.T) {
+	storage := NewMemStorage()
+	ctx := t.Context()
+	gauge := 10.0
+	counter := int64(5)
+	metrics := []models.Metrics{
+		{ID: "g1", MType: models.Gauge, Value: &gauge},
+		{ID: "c1", MType: models.Counter, Delta: &counter},
+	}
+	require.NoError(t, storage.UpdateMetrics(ctx, metrics))
+	got, err := storage.GetMetric(ctx, models.Gauge, "g1")
+	require.NoError(t, err)
+	require.NotNil(t, got.Value)
+	assert.Equal(t, 10.0, *got.Value)
+	// counter должен суммироваться
+	counter2 := int64(3)
+	require.NoError(t, storage.UpdateMetrics(ctx, []models.Metrics{
+		{ID: "c1", MType: models.Counter, Delta: &counter2},
+	}))
+	gotCounter, err := storage.GetMetric(ctx, models.Counter, "c1")
+	require.NoError(t, err)
+	require.NotNil(t, gotCounter.Delta)
+	assert.Equal(t, int64(8), *gotCounter.Delta)
+}

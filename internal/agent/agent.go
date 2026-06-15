@@ -20,19 +20,23 @@ type Agent struct {
 }
 
 // NewAgent создаёт агента с конфигурацией клиента.
-func NewAgent(cfg *config.Config) *Agent {
+func NewAgent(cfg *config.Config) (*Agent, error) {
+	sender, err := NewMetricsSender(cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &Agent{
 		collector: NewMetricsCollector(),
-		sender:    NewMetricsSender(cfg),
+		sender:    sender,
 		cfg:       cfg,
 		jobs:      make(chan []models.Metrics, 3),
-	}
+	}, nil
 }
 
 // Start запускает сбор метрик по PollInterval, периодическую отправку
 // снимка по ReportInterval и пул воркеров (RateLimit). Завершение — по отмене ctx.
 func (a *Agent) Start(ctx context.Context) {
-	a.startWorkers(ctx, a.cfg.Client.RateLimit)
+	a.startWorkers(a.cfg.Client.RateLimit)
 	go a.startCollecting(ctx)
 	go a.startReporting(ctx)
 }
@@ -98,28 +102,26 @@ func (a *Agent) sendMetricsBuffer(ctx context.Context) {
 	}
 }
 
-func (a *Agent) startWorkers(ctx context.Context, poolSize int) {
+func (a *Agent) startWorkers(poolSize int) {
 	if poolSize <= 0 {
 		poolSize = 1
 	}
 	for i := 0; i < poolSize; i++ {
 		a.wg.Add(1)
-		go func(workerID int) {
+		go func() {
 			defer a.wg.Done()
 			for {
-				select {
-				case <-ctx.Done():
+				metrics, ok := <-a.jobs
+				if !ok {
 					return
-				case metrics, ok := <-a.jobs:
-					if !ok {
-						return
-					}
-					ctxSend, cancel := context.WithTimeout(ctx, 5*time.Second)
-					_ = a.sender.SendAllMetricsBuffer(ctxSend, metrics)
-					cancel()
 				}
+				ctxSend, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				if err := a.sender.SendAllMetricsBuffer(ctxSend, metrics); err != nil {
+					log.Printf("Failed to send buffer metrics: %v", err)
+				}
+				cancel()
 			}
-		}(i)
+		}()
 	}
 }
 
@@ -133,4 +135,26 @@ func (a *Agent) buildSnapshot() []models.Metrics {
 	pollCount := a.collector.GetPollCount()
 	metrics = append(metrics, models.Metrics{ID: "PollCount", MType: models.Counter, Delta: &pollCount})
 	return metrics
+}
+
+func (a *Agent) Shutdown(ctx context.Context) error {
+	snapshot := a.buildSnapshot()
+	if err := a.sender.SendAllMetricsBuffer(ctx, snapshot); err != nil {
+		log.Printf("final metrics send : %v", err)
+	}
+
+	close(a.jobs)
+
+	done := make(chan struct{})
+
+	go func() {
+		a.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }

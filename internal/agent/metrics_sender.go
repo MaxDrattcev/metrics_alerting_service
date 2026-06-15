@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/crypto"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/hasher"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 )
@@ -19,18 +21,30 @@ const (
 	jsonType    = "application/json"
 )
 
-// MetricsSender отправляет метрики на сервер по HTTP (в т.ч. gzip, batch).
+// MetricsSender отправляет метрики на сервер по HTTP (gzip, RSA, batch).
 type MetricsSender struct {
-	cfg    *config.Config
-	client *RetryableClient
+	cfg       *config.Config
+	client    *RetryableClient
+	publicKey *rsa.PublicKey
 }
 
-// NewMetricsSender создаёт отправитель метрик
-func NewMetricsSender(cfg *config.Config) *MetricsSender {
-	return &MetricsSender{
+// NewMetricsSender создаёт отправитель метрик.
+func NewMetricsSender(cfg *config.Config) (*MetricsSender, error) {
+	s := &MetricsSender{
 		client: NewRetryableClient(),
 		cfg:    cfg,
 	}
+
+	if cfg.Client.CryptoKey == "" {
+		return s, nil
+	}
+
+	pub, err := crypto.LoadPublicKey(cfg.Client.CryptoKey)
+	if err != nil {
+		return nil, fmt.Errorf("load public key: %w", err)
+	}
+	s.publicKey = pub
+	return s, nil
 }
 
 func (s *MetricsSender) SendGauge(name string, value float64) error {
@@ -89,10 +103,12 @@ func (s *MetricsSender) sendMetricJSONGzip(ctx context.Context, metric models.Me
 	if err != nil {
 		return fmt.Errorf("marshal metric: %w", err)
 	}
-	buf, err := s.compressGzip(payload)
+
+	body, err := s.prepareRequestBody(payload)
 	if err != nil {
 		return err
 	}
+
 	url := fmt.Sprintf("http://%s/update", s.cfg.Client.Address)
 	headers := map[string]string{
 		contentType:        jsonType,
@@ -108,7 +124,7 @@ func (s *MetricsSender) sendMetricJSONGzip(ctx context.Context, metric models.Me
 		headers["HashSHA256"] = hash
 	}
 
-	resp, err := s.client.PostWithRetry(ctx, url, headers, buf.Bytes())
+	resp, err := s.client.PostWithRetry(ctx, url, headers, body)
 	if err != nil {
 		return err
 	}
@@ -124,7 +140,7 @@ func (s *MetricsSender) SendAllMetricsBuffer(ctx context.Context, metrics []mode
 		return fmt.Errorf("marshal metric: %w", err)
 	}
 
-	buf, err := s.compressGzip(payload)
+	body, err := s.prepareRequestBody(payload)
 	if err != nil {
 		return err
 	}
@@ -142,7 +158,8 @@ func (s *MetricsSender) SendAllMetricsBuffer(ctx context.Context, metrics []mode
 		}
 		headers["HashSHA256"] = hash
 	}
-	resp, err := s.client.PostWithRetry(ctx, url, headers, buf.Bytes())
+
+	resp, err := s.client.PostWithRetry(ctx, url, headers, body)
 	if err != nil {
 		return err
 	}
@@ -152,11 +169,23 @@ func (s *MetricsSender) SendAllMetricsBuffer(ctx context.Context, metrics []mode
 	return nil
 }
 
+// prepareRequestBody: json → gzip → RSA (если задан публичный ключ).
+func (s *MetricsSender) prepareRequestBody(payload []byte) ([]byte, error) {
+	gz, err := s.compressGzip(payload)
+	if err != nil {
+		return nil, err
+	}
+	if s.publicKey == nil {
+		return gz.Bytes(), nil
+	}
+	return crypto.Encrypt(s.publicKey, gz.Bytes())
+}
+
 func (s *MetricsSender) compressGzip(payload []byte) (bytes.Buffer, error) {
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
 	if _, err := gz.Write(payload); err != nil {
-		gz.Close()
+		_ = gz.Close()
 		return bytes.Buffer{}, fmt.Errorf("gzip write: %w", err)
 	}
 	if err := gz.Close(); err != nil {

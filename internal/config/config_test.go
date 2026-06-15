@@ -1,6 +1,8 @@
 package config
 
 import (
+	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 	"time"
 
@@ -75,4 +77,41 @@ func TestClientConfig_GetReportInterval(t *testing.T) {
 			assert.Equal(t, tt.want, interval)
 		})
 	}
+}
+
+func TestServerConfig_GetStoreInterval(t *testing.T) {
+	interval := int64(300)
+	cfg := &ServerConfig{StoreInterval: &interval}
+	assert.Equal(t, 300*time.Second, cfg.GetStoreInterval())
+}
+
+func TestLoadConfigJSON_Success(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/config.json"
+	content := `{
+		"server": {"address": "localhost:9090", "store_interval": 10, "store_file": "m.json", "restore": true},
+		"client": {"address": "localhost:9090", "poll_interval": 2, "report_interval": 5}
+	}`
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+
+	cfg, err := LoadConfigJSON(path)
+	require.NoError(t, err)
+	assert.Equal(t, "localhost:9090", cfg.Server.Address)
+	assert.Equal(t, int64(10), *cfg.Server.StoreInterval)
+	assert.True(t, *cfg.Server.Restore)
+	assert.Equal(t, int64(2), cfg.Client.PollInterval)
+}
+
+func TestLoadConfigJSON_FileNotFound(t *testing.T) {
+	_, err := LoadConfigJSON("no-such-file.json")
+	require.Error(t, err)
+}
+
+func TestLoadConfigJSON_InvalidJSON(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/bad.json"
+	require.NoError(t, os.WriteFile(path, []byte("{invalid"), 0644))
+
+	_, err := LoadConfigJSON(path)
+	require.Error(t, err)
 }

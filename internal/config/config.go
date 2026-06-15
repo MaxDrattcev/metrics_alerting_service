@@ -1,38 +1,41 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 // Config — корневая конфигурация приложения.
 type Config struct {
-	Server ServerConfig `yaml:"server"`
-	Client ClientConfig `yaml:"client"`
+	Server ServerConfig `json:"server"`
+	Client ClientConfig `json:"client"`
 }
 
 // ServerConfig — параметры HTTP-сервера сбора метрик.
 type ServerConfig struct {
-	Address         string `yaml:"address"`
-	StoreInterval   *int64 `yaml:"storeInterval"`
-	FileStoragePath string `yaml:"fileStoragePath"`
-	Restore         *bool  `yaml:"restore"`
-	DatabaseDSN     string `yaml:"databaseDSN"`
-	Key             string `yaml:"key"`
-	AuditFile       string `yaml:"auditFile"`
-	AuditURL        string `yaml:"auditUrl"`
+	Address         string `json:"address"`
+	StoreInterval   *int64 `json:"store_interval"`
+	FileStoragePath string `json:"store_file"`
+	Restore         *bool  `json:"restore"`
+	DatabaseDSN     string `json:"database_dsn"`
+	Key             string `json:"key"`
+	AuditFile       string `json:"audit_file"`
+	AuditURL        string `json:"audit_url"`
+	CryptoKey       string `json:"crypto_key"`
+	ConfigServer    string
 }
 
 // ClientConfig — параметры агента (адрес сервера, интервалы, ключ).
 type ClientConfig struct {
-	Address        string `yaml:"address"`
-	PollInterval   int64  `yaml:"pollInterval"`
-	ReportInterval int64  `yaml:"reportInterval"`
-	Key            string `yaml:"key"`
-	RateLimit      int    `yaml:"rateLimit"`
+	Address        string `json:"address"`
+	PollInterval   int64  `json:"poll_interval"`
+	ReportInterval int64  `json:"report_interval"`
+	Key            string `json:"key"`
+	RateLimit      int    `json:"rate_limit"`
+	CryptoKey      string `json:"crypto_key"`
+	ConfigAgent    string
 }
 
 // GetStoreInterval возвращает интервал сохранения метрик в файл.
@@ -50,8 +53,8 @@ func (c *ClientConfig) GetReportInterval() time.Duration {
 	return time.Duration(c.ReportInterval) * time.Second
 }
 
-func Load() (*Config, error) {
-	configPath := "config/config.yaml"
+// LoadConfigJSON читает JSON файл конфигурации и инициализирует структуру с ConfigJSON конфигурацией
+func LoadConfigJSON(configPath string) (*Config, error) {
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
@@ -59,7 +62,7 @@ func Load() (*Config, error) {
 	}
 
 	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
+	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 	return &config, nil
