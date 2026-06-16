@@ -17,6 +17,7 @@ type ServerFlags struct {
 	AuditURL        string
 	CryptoKey       string
 	Config          string
+	TrustedSubnet   string
 }
 
 func parseServerFlags() (*ServerFlags, error) {
@@ -30,6 +31,7 @@ func parseServerFlags() (*ServerFlags, error) {
 		auditFile       = flag.String("audit-file", "", "путь к файлу с логами аудита")
 		auditURL        = flag.String("audit-url", "", "полный url по которому отправляются логи аудита")
 		cryptoKey       = flag.String("crypto-key", "", "путь к файлу с приватным ключом")
+		trustedSubnet   = flag.String("t", "", "строковое представление бесклассовой адресации (CIDR)")
 		config          string
 	)
 	flag.StringVar(&config, "config", "config.json", "имя файла конфигурации")
@@ -51,6 +53,7 @@ func parseServerFlags() (*ServerFlags, error) {
 		AuditFile:       *auditFile,
 		AuditURL:        *auditURL,
 		CryptoKey:       *cryptoKey,
+		TrustedSubnet:   *trustedSubnet,
 		Config:          config,
 	}, nil
 }

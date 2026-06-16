@@ -8,7 +8,8 @@
     "key": "",
     "audit_file": "",
     "audit_url": "",
-    "crypto_key": "keys/server_private.pem"
+    "crypto_key": "keys/server_private.pem",
+    "trusted_subnet": ""
   },
   "client": {
     "address": "localhost:8080",

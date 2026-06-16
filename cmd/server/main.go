@@ -110,6 +110,9 @@ func initConfig(envVar environmentvar.EnvVar, flags ServerFlags) (*config.Config
 	if flags.CryptoKey != "" {
 		cfg.Server.CryptoKey = flags.CryptoKey
 	}
+	if flags.TrustedSubnet != "" {
+		cfg.Server.TrustedSubnet = flags.TrustedSubnet
+	}
 
 	if envVar.Address != "" {
 		cfg.Server.Address = envVar.Address
@@ -137,6 +140,9 @@ func initConfig(envVar environmentvar.EnvVar, flags ServerFlags) (*config.Config
 	}
 	if envVar.CryptoKeyServer != "" {
 		cfg.Server.CryptoKey = envVar.CryptoKeyServer
+	}
+	if envVar.TrustedSubnet != "" {
+		cfg.Server.TrustedSubnet = envVar.TrustedSubnet
 	}
 	return cfg, nil
 }

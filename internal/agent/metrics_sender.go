@@ -7,6 +7,7 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
@@ -115,6 +116,9 @@ func (s *MetricsSender) sendMetricJSONGzip(ctx context.Context, metric models.Me
 		"Content-Encoding": "gzip",
 		"Accept-Encoding":  "gzip",
 	}
+	if ip := s.hostIP(); ip != "" {
+		headers["X-Real-IP"] = ip
+	}
 
 	if s.cfg.Client.Key != "" {
 		hash, err := hasher.ComputeHashSHA256(payload, s.cfg.Client.Key)
@@ -150,6 +154,9 @@ func (s *MetricsSender) SendAllMetricsBuffer(ctx context.Context, metrics []mode
 		contentType:        jsonType,
 		"Content-Encoding": "gzip",
 		"Accept-Encoding":  "gzip",
+	}
+	if ip := s.hostIP(); ip != "" {
+		headers["X-Real-IP"] = ip
 	}
 	if s.cfg.Client.Key != "" {
 		hash, err := hasher.ComputeHashSHA256(payload, s.cfg.Client.Key)
@@ -192,4 +199,21 @@ func (s *MetricsSender) compressGzip(payload []byte) (bytes.Buffer, error) {
 		return bytes.Buffer{}, fmt.Errorf("gzip close: %w", err)
 	}
 	return buf, nil
+}
+
+func (s *MetricsSender) hostIP() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return ""
+	}
+	for _, a := range addrs {
+		ipNet, ok := a.(*net.IPNet)
+		if !ok || ipNet.IP.IsLoopback() {
+			continue
+		}
+		if ip4 := ipNet.IP.To4(); ip4 != nil {
+			return ip4.String()
+		}
+	}
+	return ""
 }

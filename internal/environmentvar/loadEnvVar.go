@@ -23,6 +23,7 @@ type EnvVar struct {
 	CryptoKeyServer string `env:"CRYPTO_KEY_SERVER"`
 	ConfigAgent     string `env:"CONFIG_AGENT"`
 	ConfigServer    string `env:"CONFIG_SERVER"`
+	TrustedSubnet   string `env:"TRUSTED_SUBNET"`
 }
 
 // LoadEnvVar парсит переменные окружения в структуру EnvVar.
