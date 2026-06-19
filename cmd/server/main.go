@@ -113,6 +113,9 @@ func initConfig(envVar environmentvar.EnvVar, flags ServerFlags) (*config.Config
 	if flags.TrustedSubnet != "" {
 		cfg.Server.TrustedSubnet = flags.TrustedSubnet
 	}
+	if flags.GRPCAddress != "" {
+		cfg.Server.GRPCAddress = flags.GRPCAddress
+	}
 
 	if envVar.Address != "" {
 		cfg.Server.Address = envVar.Address
@@ -143,6 +146,9 @@ func initConfig(envVar environmentvar.EnvVar, flags ServerFlags) (*config.Config
 	}
 	if envVar.TrustedSubnet != "" {
 		cfg.Server.TrustedSubnet = envVar.TrustedSubnet
+	}
+	if envVar.GRPCAddress != "" {
+		cfg.Server.GRPCAddress = envVar.GRPCAddress
 	}
 	return cfg, nil
 }

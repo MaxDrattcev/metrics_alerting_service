@@ -3,7 +3,11 @@ package internal
 import (
 	"context"
 	"errors"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/grpcserver"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/proto"
+	"google.golang.org/grpc"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -23,6 +27,8 @@ type App struct {
 	config          *config.Config
 	auditPub        *audit.Publisher
 	httpServer      *http.Server
+	grpcServer      *grpc.Server
+	grpcListener    net.Listener
 	fileService     service.FileService
 	schedulerCancel context.CancelFunc
 }
@@ -53,8 +59,26 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	metricsHandler := handler.NewMetricsHandler(metricsService)
 	metricsJSONHandler := handler.NewMetricsJSONHandler(metricsService, cfg)
 
+	metricsGRPCServer := grpcserver.NewMetricsGRPCServer(metricsService)
+	var (
+		grpcServer   *grpc.Server
+		grpcListener net.Listener
+	)
+	if cfg.Server.GRPCAddress != "" {
+		lis, err := net.Listen("tcp", cfg.Server.GRPCAddress)
+		if err != nil {
+			log.Fatalf("failed to listen gRPC on %s: %v", cfg.Server.GRPCAddress, err)
+		}
+		grpcServer = grpc.NewServer(
+			grpc.ChainUnaryInterceptor(
+				grpcserver.LoggerInterceptor(),
+				grpcserver.TrustedSubnetInterceptor(cfg.Server.TrustedSubnet),
+			),
+		)
+		proto.RegisterMetricsServer(grpcServer, metricsGRPCServer)
+		grpcListener = lis
+	}
 	router := SetupRouter(metricsHandler, metricsJSONHandler, pool, cfg)
-
 	return &App{
 		handler:         metricsHandler,
 		router:          router,
@@ -66,24 +90,38 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 			Addr:    cfg.Server.Address,
 			Handler: router,
 		},
+		grpcServer:   grpcServer,
+		grpcListener: grpcListener,
 	}
 }
 
 // Run запускает HTTP-сервер на адресе из конфигурации.
 func (a *App) Run() error {
-	log.Printf("Server starting on %s", a.config.Server.Address)
+	log.Printf("HTTP server starting on %s", a.config.Server.Address)
+	if a.grpcServer != nil {
+		go func() {
+			log.Printf("gRPC server starting on %s", a.config.Server.GRPCAddress)
+			if err := a.grpcServer.Serve(a.grpcListener); err != nil {
+				log.Printf("gRPC server stopped: %v", err)
+			}
+		}()
+	}
 	err := a.httpServer.ListenAndServe()
 	if errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}
 	return err
 }
+
 func (a *App) Shutdown(ctx context.Context) error {
 	if a.schedulerCancel != nil {
 		a.schedulerCancel()
 	}
 	if err := a.httpServer.Shutdown(ctx); err != nil {
 		return err
+	}
+	if a.grpcServer != nil {
+		a.grpcServer.GracefulStop()
 	}
 	if a.fileService != nil {
 		if err := a.fileService.WriteMetricsFile(ctx); err != nil {

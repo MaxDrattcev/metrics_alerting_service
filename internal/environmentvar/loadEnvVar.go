@@ -24,6 +24,7 @@ type EnvVar struct {
 	ConfigAgent     string `env:"CONFIG_AGENT"`
 	ConfigServer    string `env:"CONFIG_SERVER"`
 	TrustedSubnet   string `env:"TRUSTED_SUBNET"`
+	GRPCAddress     string `env:"GRPC_ADDRESS"`
 }
 
 // LoadEnvVar парсит переменные окружения в структуру EnvVar.

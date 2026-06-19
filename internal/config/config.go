@@ -25,6 +25,7 @@ type ServerConfig struct {
 	AuditURL        string `json:"audit_url"`
 	CryptoKey       string `json:"crypto_key"`
 	TrustedSubnet   string `json:"trusted_subnet"`
+	GRPCAddress     string `json:"grpc_address"`
 	ConfigServer    string
 }
 
@@ -36,6 +37,7 @@ type ClientConfig struct {
 	Key            string `json:"key"`
 	RateLimit      int    `json:"rate_limit"`
 	CryptoKey      string `json:"crypto_key"`
+	GRPCAddress    string `json:"grpc_address"`
 	ConfigAgent    string
 }
 

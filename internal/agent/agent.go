@@ -12,11 +12,12 @@ import (
 
 // Agent координирует сбор и отправку метрик по таймерам.
 type Agent struct {
-	collector *MetricsCollector
-	sender    *MetricsSender
-	cfg       *config.Config
-	jobs      chan []models.Metrics
-	wg        sync.WaitGroup
+	collector  *MetricsCollector
+	sender     *MetricsSender
+	grpcSender *GRPCSender
+	cfg        *config.Config
+	jobs       chan []models.Metrics
+	wg         sync.WaitGroup
 }
 
 // NewAgent создаёт агента с конфигурацией клиента.
@@ -25,11 +26,21 @@ func NewAgent(cfg *config.Config) (*Agent, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var grpcSender *GRPCSender
+	if cfg.Client.GRPCAddress != "" {
+		grpcSender, err = NewGRPCSender(cfg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Agent{
-		collector: NewMetricsCollector(),
-		sender:    sender,
-		cfg:       cfg,
-		jobs:      make(chan []models.Metrics, 3),
+		collector:  NewMetricsCollector(),
+		sender:     sender,
+		grpcSender: grpcSender,
+		cfg:        cfg,
+		jobs:       make(chan []models.Metrics, 3),
 	}, nil
 }
 
@@ -119,6 +130,9 @@ func (a *Agent) startWorkers(poolSize int) {
 				if err := a.sender.SendAllMetricsBuffer(ctxSend, metrics); err != nil {
 					log.Printf("Failed to send buffer metrics: %v", err)
 				}
+				if err := a.sendBatch(ctxSend, metrics); err != nil {
+					log.Printf("Failed to send batch metrics: %v", err)
+				}
 				cancel()
 			}
 		}()
@@ -142,6 +156,12 @@ func (a *Agent) Shutdown(ctx context.Context) error {
 	if err := a.sender.SendAllMetricsBuffer(ctx, snapshot); err != nil {
 		log.Printf("final metrics send : %v", err)
 	}
+	if err := a.sendBatch(ctx, snapshot); err != nil {
+		log.Printf("final metrics send: %v", err)
+	}
+	if a.grpcSender != nil {
+		_ = a.grpcSender.Close()
+	}
 
 	close(a.jobs)
 
@@ -157,4 +177,11 @@ func (a *Agent) Shutdown(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func (a *Agent) sendBatch(ctx context.Context, metrics []models.Metrics) error {
+	if a.grpcSender != nil {
+		return a.grpcSender.SendBatch(ctx, metrics)
+	}
+	return a.sender.SendAllMetricsBuffer(ctx, metrics)
 }

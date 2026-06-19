@@ -91,6 +91,9 @@ func initConfig(envVar environmentvar.EnvVar, flags AgentFlags) (*config.Config,
 	if flags.CryptoKey != "" {
 		cfg.Client.CryptoKey = flags.CryptoKey
 	}
+	if flags.GRPCAddress != "" {
+		cfg.Client.GRPCAddress = flags.GRPCAddress
+	}
 
 	if envVar.Address != "" {
 		cfg.Client.Address = envVar.Address
@@ -109,6 +112,9 @@ func initConfig(envVar environmentvar.EnvVar, flags AgentFlags) (*config.Config,
 	}
 	if envVar.CryptoKeyAgent != "" {
 		cfg.Client.CryptoKey = envVar.CryptoKeyAgent
+	}
+	if envVar.GRPCAddress != "" {
+		cfg.Client.GRPCAddress = envVar.GRPCAddress
 	}
 	return cfg, nil
 }

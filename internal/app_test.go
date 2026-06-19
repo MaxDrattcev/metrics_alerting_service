@@ -103,3 +103,22 @@ func TestApp_Shutdown(t *testing.T) {
 		t.Fatal("server did not stop")
 	}
 }
+
+func TestNewApp_WithGRPC(t *testing.T) {
+	storeInterval := int64(300)
+	restore := false
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			Address:         "127.0.0.1:0",
+			GRPCAddress:     "127.0.0.1:0",
+			FileStoragePath: t.TempDir() + "/metrics.json",
+			StoreInterval:   &storeInterval,
+			Restore:         &restore,
+		},
+	}
+
+	app := NewApp(cfg, nil)
+	require.NotNil(t, app)
+	require.NotNil(t, app.grpcServer)
+	require.NotNil(t, app.grpcListener)
+}
