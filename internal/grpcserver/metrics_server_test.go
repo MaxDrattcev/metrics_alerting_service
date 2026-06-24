@@ -33,22 +33,24 @@ func TestMetricsGRPCServer_UpdateMetrics_Success(t *testing.T) {
 		},
 	}.Build()
 
-	mockSvc.On("UpdateMetrics", mock.Anything, mock.MatchedBy(func(metrics []models.Metrics) bool {
-		return len(metrics) == 2 &&
-			metrics[0].ID == "Alloc" &&
-			metrics[0].MType == models.Gauge &&
-			metrics[0].Value != nil &&
-			*metrics[0].Value == 123.45 &&
-			metrics[1].ID == "PollCount" &&
-			metrics[1].MType == models.Counter &&
-			metrics[1].Delta != nil &&
-			*metrics[1].Delta == 5
-	})).Return(nil)
+	mockSvc.EXPECT().
+		UpdateMetrics(mock.Anything, mock.Anything).
+		Run(func(_ context.Context, metrics []models.Metrics) {
+			require.Len(t, metrics, 2)
+			require.Equal(t, "Alloc", metrics[0].ID)
+			require.Equal(t, models.Gauge, metrics[0].MType)
+			require.NotNil(t, metrics[0].Value)
+			require.Equal(t, 123.45, *metrics[0].Value)
+			require.Equal(t, "PollCount", metrics[1].ID)
+			require.Equal(t, models.Counter, metrics[1].MType)
+			require.NotNil(t, metrics[1].Delta)
+			require.Equal(t, int64(5), *metrics[1].Delta)
+		}).
+		Return(nil)
 
 	resp, err := server.UpdateMetrics(context.Background(), req)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	mockSvc.AssertExpectations(t)
 }
 
 func TestMetricsGRPCServer_UpdateMetrics_EmptyRequest(t *testing.T) {
@@ -95,7 +97,8 @@ func TestMetricsGRPCServer_UpdateMetrics_ServiceError(t *testing.T) {
 		},
 	}.Build()
 
-	mockSvc.On("UpdateMetrics", mock.Anything, mock.Anything).
+	mockSvc.EXPECT().
+		UpdateMetrics(mock.Anything, mock.Anything).
 		Return(errors.New("db error"))
 
 	_, err := server.UpdateMetrics(context.Background(), req)

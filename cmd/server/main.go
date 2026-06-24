@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -24,6 +25,15 @@ import (
 
 func main() {
 	buildinfo.Print()
+
+	zapLog, err := zap.NewDevelopment()
+	if err != nil {
+		log.Fatalf("failed to init logger: %v", err)
+	}
+	defer func() {
+		_ = zapLog.Sync()
+	}()
+
 	envVar, err := environmentvar.LoadEnvVar()
 	if err != nil {
 		logger.Info(err)
@@ -43,7 +53,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
-	app := internal.NewApp(cfg, pool)
+
+	app, err := internal.NewApp(cfg, pool, zapLog)
+	if err != nil {
+		log.Fatalf("Failed to create app: %v", err)
+	}
+
 	go func() {
 		log.Println("pprof on http://localhost:6060/debug/pprof/")
 		log.Println(http.ListenAndServe("localhost:6060", nil))
@@ -116,6 +131,12 @@ func initConfig(envVar environmentvar.EnvVar, flags ServerFlags) (*config.Config
 	if flags.GRPCAddress != "" {
 		cfg.Server.GRPCAddress = flags.GRPCAddress
 	}
+	if flags.GRPCCert != "" {
+		cfg.Server.GRPCCert = flags.GRPCCert
+	}
+	if flags.GRPCKey != "" {
+		cfg.Server.GRPCKey = flags.GRPCKey
+	}
 
 	if envVar.Address != "" {
 		cfg.Server.Address = envVar.Address
@@ -150,5 +171,12 @@ func initConfig(envVar environmentvar.EnvVar, flags ServerFlags) (*config.Config
 	if envVar.GRPCAddress != "" {
 		cfg.Server.GRPCAddress = envVar.GRPCAddress
 	}
+	if envVar.GRPCCert != "" {
+		cfg.Server.GRPCCert = envVar.GRPCCert
+	}
+	if envVar.GRPCKey != "" {
+		cfg.Server.GRPCKey = envVar.GRPCKey
+	}
+
 	return cfg, nil
 }

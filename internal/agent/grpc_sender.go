@@ -3,12 +3,12 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/grpccreds"
 
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/models"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/proto"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -23,9 +23,14 @@ func NewGRPCSender(cfg *config.Config) (*GRPCSender, error) {
 		return nil, fmt.Errorf("grpc address is empty")
 	}
 
+	creds, err := grpccreds.ClientCredentials(cfg.Client.GRPCCert)
+	if err != nil {
+		return nil, err
+	}
+
 	conn, err := grpc.NewClient(
 		cfg.Client.GRPCAddress,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(creds),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("dial grpc: %w", err)

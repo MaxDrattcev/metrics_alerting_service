@@ -26,6 +26,8 @@ type ServerConfig struct {
 	CryptoKey       string `json:"crypto_key"`
 	TrustedSubnet   string `json:"trusted_subnet"`
 	GRPCAddress     string `json:"grpc_address"`
+	GRPCCert        string `json:"grpc_cert"`
+	GRPCKey         string `json:"grpc_key"`
 	ConfigServer    string
 }
 
@@ -38,6 +40,7 @@ type ClientConfig struct {
 	RateLimit      int    `json:"rate_limit"`
 	CryptoKey      string `json:"crypto_key"`
 	GRPCAddress    string `json:"grpc_address"`
+	GRPCCert       string `json:"grpc_cert"`
 	ConfigAgent    string
 }
 

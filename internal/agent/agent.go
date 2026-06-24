@@ -127,9 +127,6 @@ func (a *Agent) startWorkers(poolSize int) {
 					return
 				}
 				ctxSend, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-				if err := a.sender.SendAllMetricsBuffer(ctxSend, metrics); err != nil {
-					log.Printf("Failed to send buffer metrics: %v", err)
-				}
 				if err := a.sendBatch(ctxSend, metrics); err != nil {
 					log.Printf("Failed to send batch metrics: %v", err)
 				}
@@ -153,9 +150,6 @@ func (a *Agent) buildSnapshot() []models.Metrics {
 
 func (a *Agent) Shutdown(ctx context.Context) error {
 	snapshot := a.buildSnapshot()
-	if err := a.sender.SendAllMetricsBuffer(ctx, snapshot); err != nil {
-		log.Printf("final metrics send : %v", err)
-	}
 	if err := a.sendBatch(ctx, snapshot); err != nil {
 		log.Printf("final metrics send: %v", err)
 	}

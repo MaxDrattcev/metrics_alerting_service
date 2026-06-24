@@ -3,8 +3,11 @@ package internal
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/grpccreds"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/grpcserver"
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/proto"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -34,7 +37,7 @@ type App struct {
 }
 
 // NewApp инициализирует хранилище, сервисы, handlers и HTTP-роутер.
-func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
+func NewApp(cfg *config.Config, pool *pgxpool.Pool, logger *zap.Logger) (*App, error) {
 	var metricsRepo repository.MetricsStorage
 	if cfg.Server.DatabaseDSN != "" {
 		metricsRepo = repository.NewPostgresStorage(pool)
@@ -67,17 +70,27 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	if cfg.Server.GRPCAddress != "" {
 		lis, err := net.Listen("tcp", cfg.Server.GRPCAddress)
 		if err != nil {
-			log.Fatalf("failed to listen gRPC on %s: %v", cfg.Server.GRPCAddress, err)
+			schedulerCancel()
+			return nil, fmt.Errorf("listen gRPC on %s: %w", cfg.Server.GRPCAddress, err)
 		}
+
+		creds, err := grpccreds.ServerCredentials(cfg.Server.GRPCCert, cfg.Server.GRPCKey)
+		if err != nil {
+			_ = lis.Close()
+			schedulerCancel()
+			return nil, fmt.Errorf("grpc tls: %w", err)
+		}
+
 		grpcServer = grpc.NewServer(
+			grpc.Creds(creds),
 			grpc.ChainUnaryInterceptor(
-				grpcserver.LoggerInterceptor(),
-				grpcserver.TrustedSubnetInterceptor(cfg.Server.TrustedSubnet),
+				grpcserver.UnaryInterceptors(logger, cfg.Server.TrustedSubnet)...,
 			),
 		)
 		proto.RegisterMetricsServer(grpcServer, metricsGRPCServer)
 		grpcListener = lis
 	}
+
 	router := SetupRouter(metricsHandler, metricsJSONHandler, pool, cfg)
 	return &App{
 		handler:         metricsHandler,
@@ -92,7 +105,7 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 		},
 		grpcServer:   grpcServer,
 		grpcListener: grpcListener,
-	}
+	}, nil
 }
 
 // Run запускает HTTP-сервер на адресе из конфигурации.

@@ -10,7 +10,9 @@
     "audit_url": "",
     "crypto_key": "keys/server_private.pem",
     "trusted_subnet": "",
-    "grpc_address": "localhost:8081"
+    "grpc_address": "localhost:8081",
+    "grpc_cert": "keys/grpc.pem",
+    "grpc_key": "keys/grpc.key"
   },
   "client": {
     "address": "localhost:8080",
@@ -19,6 +21,7 @@
     "key": "",
     "rate_limit": 10,
     "crypto_key": "keys/agent_public.pem",
-    "grpc_address": "localhost:8081"
+    "grpc_address": "localhost:8081",
+    "grpc_cert": "keys/grpc.pem"
   }
 }

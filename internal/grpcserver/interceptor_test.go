@@ -2,6 +2,7 @@ package grpcserver
 
 import (
 	"context"
+	"go.uber.org/zap"
 	"testing"
 
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/middleware"
@@ -29,11 +30,13 @@ func callInterceptor(
 }
 
 func TestTrustedSubnetInterceptor_EmptySubnet(t *testing.T) {
-	interceptor := TrustedSubnetInterceptor("")
+	interceptors := UnaryInterceptors(zap.NewNop(), "")
+	require.Len(t, interceptors, 1)
+}
 
-	resp, err := callInterceptor(t, interceptor, context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, "", resp)
+func TestUnaryInterceptors_WithSubnet(t *testing.T) {
+	interceptors := UnaryInterceptors(zap.NewNop(), "192.168.0.0/24")
+	require.Len(t, interceptors, 2)
 }
 
 func TestTrustedSubnetInterceptor_AllowedIP(t *testing.T) {
@@ -94,7 +97,7 @@ func TestTrustedSubnetInterceptor_InvalidCIDR(t *testing.T) {
 }
 
 func TestLoggerInterceptor_PassesThrough(t *testing.T) {
-	interceptor := LoggerInterceptor()
+	interceptor := LoggerInterceptor(zap.NewNop())
 
 	handler := func(ctx context.Context, req any) (any, error) {
 		return "ok", nil

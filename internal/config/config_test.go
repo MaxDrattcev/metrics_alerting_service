@@ -115,3 +115,25 @@ func TestLoadConfigJSON_InvalidJSON(t *testing.T) {
 	_, err := LoadConfigJSON(path)
 	require.Error(t, err)
 }
+
+func TestLoadConfigJSON_GRPCCertFields(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/config.json"
+	content := `{
+		"server": {
+			"grpc_address": "localhost:8081",
+			"grpc_cert": "keys/grpc.pem",
+			"grpc_key": "keys/grpc.key"
+		},
+		"client": {
+			"grpc_address": "localhost:8081",
+			"grpc_cert": "keys/grpc.pem"
+		}
+	}`
+	require.NoError(t, os.WriteFile(path, []byte(content), 0644))
+	cfg, err := LoadConfigJSON(path)
+	require.NoError(t, err)
+	assert.Equal(t, "keys/grpc.pem", cfg.Server.GRPCCert)
+	assert.Equal(t, "keys/grpc.key", cfg.Server.GRPCKey)
+	assert.Equal(t, "keys/grpc.pem", cfg.Client.GRPCCert)
+}

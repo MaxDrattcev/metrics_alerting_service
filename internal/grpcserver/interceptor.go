@@ -16,18 +16,11 @@ import (
 
 const realIPMetadataKey = "x-real-ip"
 
-var grpcLog *zap.Logger
-
-func init() {
-	var err error
-	grpcLog, err = zap.NewDevelopment()
-	if err != nil {
-		grpcLog = zap.NewNop()
-	}
-}
-
 // LoggerInterceptor логирует gRPC-запросы: метод, статус, длительность, IP.
-func LoggerInterceptor() grpc.UnaryServerInterceptor {
+func LoggerInterceptor(log *zap.Logger) grpc.UnaryServerInterceptor {
+	if log == nil {
+		log = zap.NewNop()
+	}
 	return func(
 		ctx context.Context,
 		req any,
@@ -54,23 +47,18 @@ func LoggerInterceptor() grpc.UnaryServerInterceptor {
 			fields = append(fields, zap.Int("metrics_count", len(r.GetMetrics())))
 		}
 		if err != nil {
-			grpcLog.Warn("grpc request", append(fields, zap.Error(err))...)
+			log.Warn("grpc request", append(fields, zap.Error(err))...)
 		} else {
-			grpcLog.Info("grpc request", fields...)
+			log.Info("grpc request", fields...)
 		}
 		return resp, err
 	}
 }
 
 // TrustedSubnetInterceptor проверяет, что IP агента из metadata входит в trusted_subnet.
-// При пустом trustedSubnet ограничения не применяются.
+// Подключать только если trusted_subnet задан в конфигурации.
 func TrustedSubnetInterceptor(trustedSubnet string) grpc.UnaryServerInterceptor {
 	trustedSubnet = strings.TrimSpace(trustedSubnet)
-	if trustedSubnet == "" {
-		return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-			return handler(ctx, req)
-		}
-	}
 
 	_, network, err := net.ParseCIDR(trustedSubnet)
 	if err != nil {
@@ -111,4 +99,16 @@ func TrustedSubnetInterceptor(trustedSubnet string) grpc.UnaryServerInterceptor 
 
 		return handler(ctx, req)
 	}
+}
+
+// UnaryInterceptors возвращает цепочку unary-interceptors для gRPC-сервера.
+// TrustedSubnetInterceptor добавляется только при непустом trusted_subnet.
+func UnaryInterceptors(log *zap.Logger, trustedSubnet string) []grpc.UnaryServerInterceptor {
+	interceptors := []grpc.UnaryServerInterceptor{
+		LoggerInterceptor(log),
+	}
+	if strings.TrimSpace(trustedSubnet) != "" {
+		interceptors = append(interceptors, TrustedSubnetInterceptor(trustedSubnet))
+	}
+	return interceptors
 }
