@@ -2,12 +2,14 @@ package internal
 
 import (
 	"context"
+	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/MaxDrattcev/metrics_alerting_service/internal/config"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/grpccreds"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,7 +27,8 @@ func TestNewApp(t *testing.T) {
 		},
 	}
 
-	app := NewApp(cfg, nil)
+	app, err := NewApp(cfg, nil, zap.NewNop())
+	require.NoError(t, err)
 
 	require.NotNil(t, app)
 	assert.NotNil(t, app.handler)
@@ -83,7 +86,8 @@ func TestApp_Shutdown(t *testing.T) {
 		},
 	}
 
-	app := NewApp(cfg, nil)
+	app, err := NewApp(cfg, nil, zap.NewNop())
+	require.NoError(t, err)
 
 	done := make(chan error, 1)
 	go func() { done <- app.Run() }()
@@ -93,7 +97,7 @@ func TestApp_Shutdown(t *testing.T) {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	err := app.Shutdown(shutdownCtx)
+	err = app.Shutdown(shutdownCtx)
 	require.NoError(t, err)
 
 	select {
@@ -102,4 +106,47 @@ func TestApp_Shutdown(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("server did not stop")
 	}
+}
+
+func TestNewApp_WithGRPC(t *testing.T) {
+	certFile, keyFile := grpccreds.WriteTestSelfSignedCert(t)
+
+	storeInterval := int64(300)
+	restore := false
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			Address:         "127.0.0.1:0",
+			GRPCAddress:     "127.0.0.1:0",
+			GRPCCert:        certFile,
+			GRPCKey:         keyFile,
+			FileStoragePath: t.TempDir() + "/metrics.json",
+			StoreInterval:   &storeInterval,
+			Restore:         &restore,
+		},
+	}
+	app, err := NewApp(cfg, nil, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, app)
+	require.NotNil(t, app.grpcServer)
+	require.NotNil(t, app.grpcListener)
+}
+
+func TestNewApp_GRPCInvalidTLS(t *testing.T) {
+	storeInterval := int64(300)
+	restore := false
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			Address:         "127.0.0.1:0",
+			GRPCAddress:     "127.0.0.1:0",
+			GRPCCert:        "",
+			GRPCKey:         "",
+			FileStoragePath: t.TempDir() + "/metrics.json",
+			StoreInterval:   &storeInterval,
+			Restore:         &restore,
+		},
+	}
+	app, err := NewApp(cfg, nil, zap.NewNop())
+	require.Error(t, err)
+	require.Nil(t, app)
+	require.Contains(t, err.Error(), "grpc tls")
 }

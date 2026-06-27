@@ -115,6 +115,9 @@ func (s *MetricsSender) sendMetricJSONGzip(ctx context.Context, metric models.Me
 		"Content-Encoding": "gzip",
 		"Accept-Encoding":  "gzip",
 	}
+	if ip := hostIP(); ip != "" {
+		headers["X-Real-IP"] = ip
+	}
 
 	if s.cfg.Client.Key != "" {
 		hash, err := hasher.ComputeHashSHA256(payload, s.cfg.Client.Key)
@@ -150,6 +153,9 @@ func (s *MetricsSender) SendAllMetricsBuffer(ctx context.Context, metrics []mode
 		contentType:        jsonType,
 		"Content-Encoding": "gzip",
 		"Accept-Encoding":  "gzip",
+	}
+	if ip := hostIP(); ip != "" {
+		headers["X-Real-IP"] = ip
 	}
 	if s.cfg.Client.Key != "" {
 		hash, err := hasher.ComputeHashSHA256(payload, s.cfg.Client.Key)

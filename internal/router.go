@@ -32,13 +32,13 @@ func SetupRouter(
 	router.POST("/update/:type/:name/:value", metricsHandler.Update)
 	router.GET("/value/:type/:name", metricsHandler.GetMetric)
 	router.GET("/", metricsHandler.GetAllMetrics)
-	router.POST("/update", metricsJSONHandler.Update)
-	router.POST("/update/", metricsJSONHandler.Update)
+	router.POST("/update", middleware.TrustedSubnet(cfg.Server.TrustedSubnet), metricsJSONHandler.Update)
+	router.POST("/update/", middleware.TrustedSubnet(cfg.Server.TrustedSubnet), metricsJSONHandler.Update)
 	router.POST("/value", metricsJSONHandler.GetMetric)
 	router.POST("/value/", metricsJSONHandler.GetMetric)
 	router.GET("/metrics", metricsJSONHandler.GetAllMetrics)
-	router.POST("/updates", metricsJSONHandler.UpdateMetrics)
-	router.POST("/updates/", metricsJSONHandler.UpdateMetrics)
+	router.POST("/updates", middleware.TrustedSubnet(cfg.Server.TrustedSubnet), metricsJSONHandler.UpdateMetrics)
+	router.POST("/updates/", middleware.TrustedSubnet(cfg.Server.TrustedSubnet), metricsJSONHandler.UpdateMetrics)
 	router.GET("/ping", handler.PingDB(pool))
 	return router
 }

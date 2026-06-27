@@ -27,3 +27,8 @@ func ClientIPFromContext(ctx context.Context) string {
 	}
 	return ip
 }
+
+// ContextWithClientIP сохраняет IP в context (для gRPC и аудита).
+func ContextWithClientIP(ctx context.Context, ip string) context.Context {
+	return context.WithValue(ctx, clientIPKey, ip)
+}

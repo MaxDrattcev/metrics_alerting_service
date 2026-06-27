@@ -17,6 +17,10 @@ type ServerFlags struct {
 	AuditURL        string
 	CryptoKey       string
 	Config          string
+	TrustedSubnet   string
+	GRPCAddress     string
+	GRPCCert        string
+	GRPCKey         string
 }
 
 func parseServerFlags() (*ServerFlags, error) {
@@ -30,7 +34,12 @@ func parseServerFlags() (*ServerFlags, error) {
 		auditFile       = flag.String("audit-file", "", "путь к файлу с логами аудита")
 		auditURL        = flag.String("audit-url", "", "полный url по которому отправляются логи аудита")
 		cryptoKey       = flag.String("crypto-key", "", "путь к файлу с приватным ключом")
-		config          string
+		trustedSubnet   = flag.String("t", "", "строковое представление бесклассовой адресации (CIDR)")
+		grpcAddress     = flag.String("g", "", "gRPC адрес сервера")
+		grpcCert        = flag.String("grpc-cert", "", "путь к TLS-сертификату gRPC")
+		grpcKey         = flag.String("grpc-key", "", "путь к приватному ключу gRPC")
+
+		config string
 	)
 	flag.StringVar(&config, "config", "config.json", "имя файла конфигурации")
 	flag.StringVar(&config, "c", "config.json", "имя файла конфигурации")
@@ -51,6 +60,10 @@ func parseServerFlags() (*ServerFlags, error) {
 		AuditFile:       *auditFile,
 		AuditURL:        *auditURL,
 		CryptoKey:       *cryptoKey,
+		TrustedSubnet:   *trustedSubnet,
 		Config:          config,
+		GRPCAddress:     *grpcAddress,
+		GRPCCert:        *grpcCert,
+		GRPCKey:         *grpcKey,
 	}, nil
 }

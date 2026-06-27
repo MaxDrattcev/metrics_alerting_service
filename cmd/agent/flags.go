@@ -14,6 +14,8 @@ type AgentFlags struct {
 	RateLimit      int
 	CryptoKey      string
 	Config         string
+	GRPCAddress    string
+	GRPCCert       string
 }
 
 func parseAgentFlags() (*AgentFlags, error) {
@@ -24,6 +26,8 @@ func parseAgentFlags() (*AgentFlags, error) {
 		key            = flag.String("k", "", "Ключ")
 		rateLimit      = flag.Int("l", 0, "количество одновременно исходящих запросов")
 		cryptoKey      = flag.String("crypto-key", "", "путь к файлу с публичным ключом")
+		grpcAddress    = flag.String("g", "", "gRPC адрес агента")
+		grpcCert       = flag.String("grpc-cert", "", "путь к доверенному TLS-сертификату gRPC")
 		config         string
 	)
 	flag.StringVar(&config, "config", "config.json", "имя файла конфигурации")
@@ -43,5 +47,7 @@ func parseAgentFlags() (*AgentFlags, error) {
 		RateLimit:      *rateLimit,
 		CryptoKey:      *cryptoKey,
 		Config:         config,
+		GRPCAddress:    *grpcAddress,
+		GRPCCert:       *grpcCert,
 	}, nil
 }

@@ -3,7 +3,14 @@ package internal
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/grpccreds"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/grpcserver"
+	"github.com/MaxDrattcev/metrics_alerting_service/internal/proto"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -23,12 +30,14 @@ type App struct {
 	config          *config.Config
 	auditPub        *audit.Publisher
 	httpServer      *http.Server
+	grpcServer      *grpc.Server
+	grpcListener    net.Listener
 	fileService     service.FileService
 	schedulerCancel context.CancelFunc
 }
 
 // NewApp инициализирует хранилище, сервисы, handlers и HTTP-роутер.
-func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
+func NewApp(cfg *config.Config, pool *pgxpool.Pool, logger *zap.Logger) (*App, error) {
 	var metricsRepo repository.MetricsStorage
 	if cfg.Server.DatabaseDSN != "" {
 		metricsRepo = repository.NewPostgresStorage(pool)
@@ -53,8 +62,36 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 	metricsHandler := handler.NewMetricsHandler(metricsService)
 	metricsJSONHandler := handler.NewMetricsJSONHandler(metricsService, cfg)
 
-	router := SetupRouter(metricsHandler, metricsJSONHandler, pool, cfg)
+	metricsGRPCServer := grpcserver.NewMetricsGRPCServer(metricsService)
+	var (
+		grpcServer   *grpc.Server
+		grpcListener net.Listener
+	)
+	if cfg.Server.GRPCAddress != "" {
+		lis, err := net.Listen("tcp", cfg.Server.GRPCAddress)
+		if err != nil {
+			schedulerCancel()
+			return nil, fmt.Errorf("listen gRPC on %s: %w", cfg.Server.GRPCAddress, err)
+		}
 
+		creds, err := grpccreds.ServerCredentials(cfg.Server.GRPCCert, cfg.Server.GRPCKey)
+		if err != nil {
+			_ = lis.Close()
+			schedulerCancel()
+			return nil, fmt.Errorf("grpc tls: %w", err)
+		}
+
+		grpcServer = grpc.NewServer(
+			grpc.Creds(creds),
+			grpc.ChainUnaryInterceptor(
+				grpcserver.UnaryInterceptors(logger, cfg.Server.TrustedSubnet)...,
+			),
+		)
+		proto.RegisterMetricsServer(grpcServer, metricsGRPCServer)
+		grpcListener = lis
+	}
+
+	router := SetupRouter(metricsHandler, metricsJSONHandler, pool, cfg)
 	return &App{
 		handler:         metricsHandler,
 		router:          router,
@@ -66,24 +103,38 @@ func NewApp(cfg *config.Config, pool *pgxpool.Pool) *App {
 			Addr:    cfg.Server.Address,
 			Handler: router,
 		},
-	}
+		grpcServer:   grpcServer,
+		grpcListener: grpcListener,
+	}, nil
 }
 
 // Run запускает HTTP-сервер на адресе из конфигурации.
 func (a *App) Run() error {
-	log.Printf("Server starting on %s", a.config.Server.Address)
+	log.Printf("HTTP server starting on %s", a.config.Server.Address)
+	if a.grpcServer != nil {
+		go func() {
+			log.Printf("gRPC server starting on %s", a.config.Server.GRPCAddress)
+			if err := a.grpcServer.Serve(a.grpcListener); err != nil {
+				log.Printf("gRPC server stopped: %v", err)
+			}
+		}()
+	}
 	err := a.httpServer.ListenAndServe()
 	if errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}
 	return err
 }
+
 func (a *App) Shutdown(ctx context.Context) error {
 	if a.schedulerCancel != nil {
 		a.schedulerCancel()
 	}
 	if err := a.httpServer.Shutdown(ctx); err != nil {
 		return err
+	}
+	if a.grpcServer != nil {
+		a.grpcServer.GracefulStop()
 	}
 	if a.fileService != nil {
 		if err := a.fileService.WriteMetricsFile(ctx); err != nil {
